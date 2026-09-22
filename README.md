@@ -1,2 +1,2 @@
-# A_COMPUTER-VISION-ADVANCED
+# UA_COMPUTER-VISION-ADVANCED
 Репозиторій для курсу "Computer Vision для Defence Tech та автономних систем"
