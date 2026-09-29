@@ -314,6 +314,10 @@ class PhotoPanel(Panel):
             loaded, error = decode_upload(self.uploader.value)
             if loaded is None:
                 print(error)
+            else:
+                # закриває відкладений clear: інакше clear з render() піде другим поспіль,
+                # а PyCharm на цьому губить графік
+                print("Обробляю фото…")
         if loaded is None:  # і помилка декодування, і виняток лишають photo недоторканим
             return
         self.photo = loaded
@@ -1121,10 +1125,14 @@ class ThresholdPanel(PhotoPanel):
                 print("Детектор нічого не знайшов — намалюй ціль мишею або слайдерами.")
                 return
             self.results = []
+            # вивід одразу після clear(wait=True): два відкладені clear поспіль PyCharm
+            # обробляє з помилкою, і графік з render() зникає
+            print("Міряю поріг детекції…")
             self._measure()
             measured = True
         # якщо _measure упав, Output уже показав traceback — render() його лише затер би
         if measured:
+            self.out.clear_output()
             self.render()
 
     # -------------------------------------------------------------------- миша
