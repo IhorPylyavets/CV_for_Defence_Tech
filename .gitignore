@@ -1,0 +1,28 @@
+__pycache__/
+.venv/
+.ipynb_checkpoints/
+.virtual_documents/
+anaconda_projects/
+
+# Дані, ваги, збірки
+data/
+build/
+*.pt
+*.pth
+*.onnx
+*.engine
+*.pptx
+*.mp4
+*.ply
+*.pcd
+
+.DS_Store
+.idea/
+.vscode/
+
+# Артефакти: ваги й датасети тримаємо поза git, лишаємо тільки структуру.
+# artifacts/images/ комітимо: фото для демо невеликі й потрібні одразу після клонування.
+artifacts/models/**
+artifacts/kitti/**
+!artifacts/**/
+!artifacts/**/README.md

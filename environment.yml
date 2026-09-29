@@ -1,0 +1,16 @@
+# Базове conda-середовище курсу.
+#
+# Тут навмисно лише інтерпретатор: увесь ML-стек ставиться через pip з requirements.txt,
+# бо канонічні колеса torch/ultralytics живуть на PyPI, а змішування conda- і pip-каналів
+# у цьому стеку регулярно призводить до конфліктів солвера.
+#
+# Torch ставить scripts/setup.py — він сам обирає збірку (CUDA / CPU / Apple MPS)
+# під платформу, тому в цьому файлі його немає.
+name: cv-advanced
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.11
+  - pip

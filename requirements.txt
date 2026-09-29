@@ -1,0 +1,19 @@
+# Базове — потрібне майже на кожному занятті
+torch
+torchvision
+opencv-python
+numpy
+matplotlib
+ultralytics>=8.3   # з 8.3 з'явились ваги YOLO11
+transformers
+jupyterlab>=4
+ipywidgets>=8      # віджети для JupyterLab 4
+ipyevents>=2       # вибір цілі мишею в demo2; 2.x — під JupyterLab 4
+python-pptx
+
+# Окремими venv, бо конфліктують між собою:
+#   заняття 2, 3, 4, 11 — open3d, pycolmap
+#   заняття 7, 8        — diffusers, accelerate, peft, controlnet-aux
+#   заняття 10          — PyGObject (GStreamer), aiortc, av
+#   заняття 13, 14      — dvc[s3], tritonclient[all], grad-cam, fastapi
+#   заняття 15–17       — onnx, onnxruntime-gpu, openvino; tensorrt із JetPack/NGC
