@@ -14,7 +14,7 @@
 
 | Демо | Про що | До слайдів |
 |---|---|---|
-| [demo1](lesson_02_demo1_pinhole_demo.html) | Камера обскура: повзунки `K` і пози камери, та сама сцена в 3D і в кадрі 1280×720, живі `K`, `[R \| t]` і `M = K[R \| t]`, шлях однієї точки від світу до пікселя; чому `t = −R·C` — не положення камери | — |
+| [demo1](lesson_02_demo1_pinhole_demo.html) | Камера обскура: повзунки `K` і пози камери, та сама сцена в 3D і в кадрі 1280×720, живі `K`, `[R \| t]` і `M = K[R \| t]`, шлях однієї точки від світу до пікселя; чому `t = −R·C` — не положення камери | «Модель камери обскури (pinhole)» |
 | [demo2](distortion_demo.html) | Модель Брауна — Конраді з OpenCV (`k1, k2, k3, p1, p2`, пресети лінз): куди лінза зсуває точку, чому «виправити» тією самою формулою не можна, 5 ітерацій `undistortPoints` проти збіжності, справжнє поле зору і де поліном «складається» | «Radial distortion», «Fisheye» |
 | [demo3](lesson_02_demo3_calibration.ipynb) | Чотири типові помилки калібрування в цифрах на віртуальній камері з відомою `K`: замало знімків, дошка лише в центрі, фронтальні кадри, довіра до RMS; паспорт калібрування | «Пайплайн калібрування», «Типові помилки калібрування» |
 | [demo4](lesson_02_demo4_disparity_methods.ipynb) | Шість методів disparity (SAD, Census, BM, SGBM, SGBM + L–R, RAFT) на **реальних** парах Middlebury з істиною; крива вартості в одному пікселі; штрафи SGBM; `doffs` і закон Z² | «Алгоритми», «Де стереозір ламається», «Епіполюси на нескінченності», «Ректифікація на практиці» |
@@ -98,45 +98,16 @@ RAFT іде з `torchvision`, ваги (~20 МБ) завантажаться с�
 
 ## Джерела
 
-**Модель камери та проекція**
 - R. Hartley, A. Zisserman. [*Multiple View Geometry in Computer Vision*](https://www.robots.ox.ac.uk/~vgg/hzbook/),
-  2nd ed., Cambridge University Press, 2004 — розд. 6 «Camera Models»: `K`, `[R | t]`, `P = K[R | t]`,
-  `t = −R·C` (demo1); розд. 9–11 — епіполярна геометрія й фундаментальна матриця.
+  2nd ed., 2004 — розд. 6 (модель камери, `P = K[R | t]`), розд. 9–11 (епіполярна геометрія).
 - R. Szeliski. [*Computer Vision: Algorithms and Applications*](https://szeliski.org/Book/), 2nd ed., 2022 —
-  розд. 2 «Image formation», розд. 11 (калібрування), розд. 12 «Depth estimation» (стерео).
-  PDF безкоштовний для особистого використання.
-
-**Дисторсія та калібрування**
-- D. C. Brown. Decentering Distortion of Lenses. *Photogrammetric Engineering* 32(3), 1966 —
-  радіальна й тангенціальна модель, яку реалізує OpenCV (`k1, k2, k3, p1, p2`, demo2).
-- J. Kannala, S. S. Brandt. [A Generic Camera Model and Calibration Method for Conventional, Wide-Angle, and Fish-Eye Lenses](https://doi.org/10.1109/TPAMI.2006.153).
-  IEEE TPAMI 28(8), 2006 — модель fisheye, на яку переходять, коли поліном Брауна «складається».
+  формування зображення, калібрування, стерео. PDF безкоштовний.
 - Z. Zhang. [A Flexible New Technique for Camera Calibration](https://doi.org/10.1109/34.888718).
-  IEEE TPAMI 22(11), 2000 — калібрування за кількома кадрами плоскої мішені; основа
-  `cv2.calibrateCamera` (demo3), зокрема чому фронтальні кадри вироджені.
-- S. Garrido-Jurado et al. [Automatic generation and detection of highly reliable fiducial markers under occlusion](https://doi.org/10.1016/j.patcog.2014.01.005).
-  Pattern Recognition 47(6), 2014 — маркери ArUco, з яких складається ChArUco.
+  IEEE TPAMI, 2000 — основа `cv2.calibrateCamera` (demo3).
 - OpenCV: [Camera Calibration](https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html),
-  [ChArUco Board Detection](https://docs.opencv.org/4.x/df/d4a/tutorial_charuco_detection.html),
-  [модуль calib3d](https://docs.opencv.org/4.x/d9/d0c/group__calib3d.html) — формули моделі,
-  `calibrateCameraExtended`, `undistortPoints`.
-
-**Стерео та disparity**
-- D. Scharstein, R. Szeliski. [A Taxonomy and Evaluation of Dense Two-Frame Stereo Correspondence Algorithms](https://doi.org/10.1023/A:1014573219977).
-  IJCV 47, 2002 — вартість відповідності, агрегація, WTA: та сама схема, що в demo4.
-- R. Zabih, J. Woodfill. Non-parametric Local Transforms for Computing Visual Correspondence. ECCV 1994 —
-  Census-трансформ, стійкий до зміни експозиції.
+  [модуль calib3d](https://docs.opencv.org/4.x/d9/d0c/group__calib3d.html) — модель дисторсії, `undistortPoints`.
 - H. Hirschmüller. [Stereo Processing by Semiglobal Matching and Mutual Information](https://doi.org/10.1109/TPAMI.2007.1166).
-  IEEE TPAMI 30(2), 2008 — SGM; у OpenCV це `StereoSGBM` зі штрафами `P1`, `P2`.
+  IEEE TPAMI, 2008 — SGM, тобто `StereoSGBM` (demo4).
 - Z. Teed, J. Deng. [RAFT: Recurrent All-Pairs Field Transforms for Optical Flow](https://arxiv.org/abs/2003.12039).
-  ECCV 2020 — потік, яким demo4 рахує disparity; ваги з [torchvision](https://pytorch.org/vision/stable/models/raft.html).
-
-**Дані**
-- D. Scharstein et al. High-Resolution Stereo Datasets with Subpixel-Accurate Ground Truth. GCPR 2014 —
-  [Middlebury 2014](https://vision.middlebury.edu/stereo/data/scenes2014/) і
-  [MiddEval3](https://vision.middlebury.edu/stereo/eval3/): пари з істиною, `calib.txt` з `doffs` (demo4).
-
-**Що можна додати**
-- L. Lipson, Z. Teed, J. Deng. [RAFT-Stereo: Multilevel Recurrent Field Transforms for Stereo Matching](https://arxiv.org/abs/2109.07547). 3DV 2021.
-- G. Xu et al. [Iterative Geometry Encoding Volume for Stereo Matching](https://arxiv.org/abs/2303.06615) (IGEV-Stereo). CVPR 2023.
-- L. Yang et al. [Depth Anything: Unleashing the Power of Large-Scale Unlabeled Data](https://arxiv.org/abs/2401.10891). CVPR 2024.
+  ECCV 2020 (demo4).
+- [Middlebury Stereo Datasets](https://vision.middlebury.edu/stereo/data/scenes2014/) — пари з істиною (demo4).
