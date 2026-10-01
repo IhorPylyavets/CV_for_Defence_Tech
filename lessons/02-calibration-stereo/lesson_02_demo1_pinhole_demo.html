@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Камера обскура і матриця проекції</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F2F3F4; --panel: #FFFFFF; --line: #D6D9DC; --text: #16181A; --muted: #5C636B;
+  --blue: #1F6FD6; --teal: #0E9C8A; --amber: #C47A00; --red: #D63A3A; --grid: #E4E6E8; --stage: #FAFAFB;
+  --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, "DejaVu Sans Mono", monospace;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #181919; --panel: #202121; --line: #333434; --text: #E8EAED; --muted: #9AA0A6;
+    --blue: #4A9EFF; --teal: #2DD4BF; --amber: #F59E0B; --red: #EF4444; --grid: #262828; --stage: #141515;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #181919; --panel: #202121; --line: #333434; --text: #E8EAED; --muted: #9AA0A6;
+  --blue: #4A9EFF; --teal: #2DD4BF; --amber: #F59E0B; --red: #EF4444; --grid: #262828; --stage: #141515;
+}
+*, *::before, *::after { box-sizing: inherit; }
+html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font: 15px/1.45 var(--sans); }
+
+.app { display: grid; grid-template-columns: 270px minmax(0, 1.2fr) minmax(0, 1fr);
+       grid-template-rows: auto minmax(0, 1fr); gap: 14px; padding: 16px 18px; min-height: 100vh; }
+header { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+h1 { font: 600 26px/1.15 var(--mono); margin: 0; letter-spacing: -0.01em; }
+.lede { color: var(--muted); margin: 4px 0 0; max-width: 62ch; }
+.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+select { max-width: 100%; }
+
+button, select { font: 500 14px var(--sans); color: var(--text); background: var(--panel);
+                 border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--muted); }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+aside { display: flex; flex-direction: column; gap: 16px; overflow-y: auto; min-width: 0; }
+fieldset { border: 1px solid var(--line); border-radius: 12px; margin: 0; padding: 12px 14px 6px; background: var(--panel); }
+legend { padding: 0 6px; font-weight: 600; }
+legend .sym { font-family: var(--mono); }
+.k legend .sym { color: var(--blue); }
+.pose legend .sym { color: var(--teal); }
+.row { display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 8px; margin-bottom: 8px; }
+.row label { font-size: 13.5px; color: var(--muted); }
+.row output { font: 13px var(--mono); min-width: 5.5ch; text-align: right; }
+.row input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--blue); margin: 2px 0 0; }
+.pose input[type=range] { accent-color: var(--teal); }
+
+.seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; background: transparent; padding: 8px 6px; font-size: 13px; line-height: 1.25; }
+.seg button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+
+.stage { position: relative; background: var(--stage); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; min-height: 360px; }
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.stage canvas:active { cursor: grabbing; }
+.stage .hint { position: absolute; left: 14px; bottom: 10px; right: 14px; color: var(--muted); font-size: 12.5px; pointer-events: none; }
+.stage .caption { position: absolute; left: 14px; top: 10px; font-size: 13px; color: var(--muted); pointer-events: none; }
+.tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+       padding: 3px 7px; font: 12.5px var(--sans); display: none; white-space: nowrap; }
+
+.right { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 14px; min-width: 0; }
+.frame { aspect-ratio: 16 / 10; min-height: 0; }
+.frame canvas { cursor: pointer; }
+.numbers { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; overflow: auto;
+           display: grid; grid-template-columns: auto auto; gap: 10px 18px; align-content: start; justify-content: start; }
+.block h2 { font: 600 13.5px var(--mono); margin: 0 0 4px; }
+.block.kb h2 { color: var(--blue); } .block.rt h2 { color: var(--teal); } .block.m h2 { color: var(--amber); }
+.mat { display: inline-grid; font: 12px/1.55 var(--mono); border-left: 1.5px solid var(--muted); border-right: 1.5px solid var(--muted);
+       padding: 1px 7px; border-radius: 4px; column-gap: 10px; }
+.mat span { text-align: right; }
+.mat .sep { border-left: 1px dashed var(--muted); padding-left: 10px; }
+.path { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 10px; display: grid; grid-template-columns: auto auto; justify-content: start; gap: 10px 10px; }
+.path > div { min-width: 0; }
+.path h2 { font: 600 13.5px var(--sans); margin: 0 0 4px; }
+.path h2 b { color: var(--amber); }
+.steps { font: 12px/1.6 var(--mono); margin: 0; white-space: pre; overflow-x: auto; }
+.steps .note { color: var(--muted); font-family: var(--sans); }
+.steps .hit { color: var(--amber); font-weight: 600; }
+.ct { border: 1px solid var(--red); border-radius: 10px; padding: 8px 10px; }
+.ct h2 { color: var(--red); }
+.ct p { margin: 4px 0 0; font-size: 12px; color: var(--muted); max-width: 34ch; }
+.warn { color: var(--red); font-weight: 600; }
+footer { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; order: 4; }
+
+@media (min-width: 1101px) and (min-height: 850px) { .app { height: 100vh; } .right { min-height: 0; } }
+@media (min-width: 1101px) and (max-width: 1500px) {
+  .app { grid-template-columns: 250px minmax(0, 1.15fr) minmax(0, 1fr); }
+  .mat, .steps { font-size: 11px; }
+  .path { grid-template-columns: 1fr; }
+}
+@media (max-width: 1100px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  aside { order: 3; overflow: visible; }
+  .stage.world { height: 62vh; }
+  .numbers { grid-template-columns: 1fr; }
+  .path { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>Камера обскура і матриця проекції</h1>
+      <p class="lede">Один промінь — три види: світ, кадр і числа, що їх пов'язують. Наведіть або клікніть вершину — вона підсвітиться всюди.</p>
+    </div>
+    <div class="actions">
+      <label for="vertex" style="color:var(--muted);font-size:13.5px">Точка</label>
+      <select id="vertex"></select>
+      <button id="reset" type="button">Скинути все</button>
+    </div>
+  </header>
+
+  <aside aria-label="Параметри камери">
+    <fieldset class="k">
+      <legend>Внутрішні параметри <span class="sym">K</span></legend>
+      <div class="row"><label for="f">Фокусна f, px</label><output for="f"></output><input id="f" type="range" min="300" max="2500" step="10" value="1000"></div>
+      <div class="row"><label for="aspect">Відношення fy / fx</label><output for="aspect"></output><input id="aspect" type="range" min="0.8" max="1.2" step="0.01" value="1"></div>
+      <div class="row"><label for="cx">Головна точка cx, px</label><output for="cx"></output><input id="cx" type="range" min="0" max="1280" step="5" value="640"></div>
+      <div class="row"><label for="cy">Головна точка cy, px</label><output for="cy"></output><input id="cy" type="range" min="0" max="720" step="5" value="360"></div>
+    </fieldset>
+    <fieldset class="pose">
+      <legend>Поза камери <span class="sym">[R | t]</span></legend>
+      <div class="row"><label for="px">Центр X, м</label><output for="px"></output><input id="px" type="range" min="-10" max="10" step="0.1" value="0"></div>
+      <div class="row"><label for="py">Центр Y, м</label><output for="py"></output><input id="py" type="range" min="-12" max="8" step="0.1" value="-4"></div>
+      <div class="row"><label for="pz">Висота Z, м</label><output for="pz"></output><input id="pz" type="range" min="0.2" max="12" step="0.1" value="1.6"></div>
+      <div class="row"><label for="yaw">Курс, °</label><output for="yaw"></output><input id="yaw" type="range" min="-60" max="60" step="1" value="0"></div>
+      <div class="row"><label for="pitch">Тангаж, °</label><output for="pitch"></output><input id="pitch" type="range" min="-45" max="30" step="1" value="0"></div>
+      <div class="row"><label for="roll">Крен, °</label><output for="roll"></output><input id="roll" type="range" min="-45" max="45" step="1" value="0"></div>
+    </fieldset>
+    <div>
+      <div style="font-weight:600;margin:0 0 6px">Площина зображення</div>
+      <div class="seg" role="group" aria-label="Площина зображення">
+        <button type="button" id="virtual" aria-pressed="true">перед центром, як у формулі</button>
+        <button type="button" id="physical" aria-pressed="false">позаду центру, як у камері обскурі</button>
+      </div>
+    </div>
+  </aside>
+
+  <section class="stage world" aria-label="Тривимірна сцена">
+    <canvas id="world" aria-label="Сцена: будиночок, камера, промені. Тягніть мишкою, щоб обертати."></canvas>
+    <div class="caption" id="worldCaption"></div>
+    <div class="hint">Тягніть, щоб обертати; колесо — наблизити; із Shift або правою кнопкою — зсунути; подвійний клік повертає вигляд.</div>
+    <div class="tip" id="tipWorld"></div>
+  </section>
+
+  <div class="right">
+    <section class="stage frame" aria-label="Кадр у пікселях">
+      <canvas id="image" aria-label="Кадр 1280 на 720 пікселів"></canvas>
+      <div class="caption" id="imageCaption"></div>
+      <div class="tip" id="tipImage"></div>
+    </section>
+    <section class="numbers" aria-live="polite">
+      <div class="block kb"><h2>K</h2><div class="mat" id="matK"></div></div>
+      <div class="block rt"><h2>[R | t]</h2><div class="mat" id="matRT"></div></div>
+      <div class="block m" style="grid-column:1 / -1"><h2>M = K · [R | t]</h2><div class="mat" id="matM"></div></div>
+      <div class="path">
+        <div><h2>Шлях точки <b id="pointName"></b></h2><pre class="steps" id="steps"></pre></div>
+        <div class="ct"><h2>t — не положення камери</h2><pre class="steps" id="ct"></pre>
+          <p>Ми задаємо центр C, а в матрицю йде t = −R·C — початок світової системи, записаний в осях камери.</p></div>
+      </div>
+    </section>
+  </div>
+  <footer>Цю 3D-сцену теж малює pinhole-камера: мишка лише змінює її [R | t].</footer>
+</div>
+
+<script>
+"use strict";
+// ───────────────────────── математика: те саме, що в ноутбуці demo0
+const W = 1280, H = 720;
+// Площина зображення стоїть на відстані f від центру, а її розмір — розмір сенсора — сталий.
+// Масштаб сцени: 1 px фокусної = 2.2 мм, тож f = 1000 px — це 2.2 м, а «сенсор» 1280×720 px — 2.8 × 1.6 м.
+const PX_TO_M = 0.0022;
+const planeDepth = () => S.K[0][0] * PX_TO_M;
+const mul = (A, B) => A.map(r => B[0].map((_, j) => r.reduce((s, v, k) => s + v * B[k][j], 0)));
+const mv = (A, v) => A.map(r => r.reduce((s, x, k) => s + x * v[k], 0));
+const T = A => A[0].map((_, j) => A.map(r => r[j]));
+const add = (a, b) => a.map((v, i) => v + b[i]), sub = (a, b) => a.map((v, i) => v - b[i]);
+const scale = (a, s) => a.map(v => v * s), dot = (a, b) => a.reduce((s, v, i) => s + v * b[i], 0);
+const cross = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+const norm = a => scale(a, 1 / Math.hypot(...a));
+const rotX = a => [[1,0,0],[0,Math.cos(a),-Math.sin(a)],[0,Math.sin(a),Math.cos(a)]];
+const rotZ = a => [[Math.cos(a),-Math.sin(a),0],[Math.sin(a),Math.cos(a),0],[0,0,1]];
+const AXES0 = [[1,0,0],[0,0,1],[0,-1,0]];     // стовпці: осі камери у світі при нульових кутах
+
+function intrinsics(fx, fy, cx, cy) { return [[fx,0,cx],[0,fy,cy],[0,0,1]]; }
+function cameraPose(C, yaw, pitch, roll) {
+  const d = Math.PI / 180;
+  const axes = mul(mul(mul(rotZ(-yaw*d), AXES0), rotX(pitch*d)), rotZ(roll*d));
+  const R = T(axes);                            // рядки R — осі камери, записані у світі
+  return { R, t: scale(mv(R, C), -1) };         // t = −R·C
+}
+function projectionMatrix(K, R, t) { return mul(K, R.map((r, i) => [...r, t[i]])); }
+function project(M, X) { const p = mv(M, [...X, 1]); return { uv: [p[0]/p[2], p[1]/p[2]], s: p[2] }; }
+
+const V = [[-2,10,0],[2,10,0],[2,14,0],[-2,14,0],[-2,10,3],[2,10,3],[2,14,3],[-2,14,3],[0,10,5],[0,14,5],
+           [-0.6,10,0],[0.6,10,0],[0.6,10,2],[-0.6,10,2]];
+const E = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7],[4,8],[5,8],[7,9],[6,9],[8,9],[10,13],[13,12],[12,11]];
+const NAMES = ["фундамент, лівий ближній","фундамент, правий ближній","фундамент, правий дальній","фундамент, лівий дальній",
+  "стіна, лівий ближній","стіна, правий ближній","стіна, правий дальній","стіна, лівий дальній","гребінь ближній","гребінь дальній",
+  "двері, лівий низ","двері, правий низ","двері, правий верх","двері, лівий верх"];
+
+// ───────────────────────── стан
+const $ = id => document.getElementById(id);
+const IDS = ["f","aspect","cx","cy","px","py","pz","yaw","pitch","roll"];
+const DEFAULTS = Object.fromEntries(IDS.map(id => [id, +$(id).value]));
+let physical = false, selected = 8, hoverWorld = -1, hoverImage = -1;
+const VIEW0 = { az: -0.55, el: 0.36, dist: 30, target: [0, 5, 2.5] };
+let view = { ...VIEW0, target: [...VIEW0.target] };
+let S = {};                                         // поточні K, R, t, M, проекції
+
+NAMES.forEach((n, i) => { const o = document.createElement("option"); o.value = i; o.textContent = n; $("vertex").append(o); });
+$("vertex").value = selected;
+
+function compute() {
+  const g = id => +$(id).value;
+  const K = intrinsics(g("f"), g("f") * g("aspect"), g("cx"), g("cy"));
+  const C = [g("px"), g("py"), g("pz")];
+  const { R, t } = cameraPose(C, g("yaw"), g("pitch"), g("roll"));
+  const M = projectionMatrix(K, R, t);
+  const proj = V.map(X => project(M, X));
+  S = { K, R, t, C, M, proj };
+  IDS.forEach(id => { const o = document.querySelector(`output[for="${id}"]`); const v = g(id);
+    o.textContent = id === "aspect" ? v.toFixed(2) : ["px","py","pz"].includes(id) ? v.toFixed(1) : v.toFixed(0); });
+}
+
+// ───────────────────────── кольори з CSS-токенів
+let COL = {};
+function readColors() { const cs = getComputedStyle(document.documentElement);
+  for (const k of ["text","muted","line","grid","blue","teal","amber","red","panel","mono"]) COL[k] = cs.getPropertyValue("--" + k).trim(); }
+
+// ───────────────────────── canvas із підтримкою HiDPI
+function fit(canvas) {
+  const r = canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  if (canvas.width !== Math.round(r.width * dpr) || canvas.height !== Math.round(r.height * dpr)) {
+    canvas.width = Math.round(r.width * dpr); canvas.height = Math.round(r.height * dpr); }
+  const ctx = canvas.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w: r.width, h: r.height };
+}
+
+// ───────────────────────── камера спостерігача (сама — pinhole)
+function viewer(w, h) {
+  const eye = add(view.target, scale([Math.cos(view.el)*Math.cos(view.az), Math.cos(view.el)*Math.sin(view.az), Math.sin(view.el)], view.dist));
+  const fwd = norm(sub(view.target, eye)), right = norm(cross(fwd, [0,0,1])), up = cross(right, fwd);
+  const focal = Math.min(w, h) / (2 * Math.tan(25 * Math.PI / 180));   // 50° по меншій стороні: на вузькому екрані сцена не обрізається
+  const toView = P => { const d = sub(P, eye); return [dot(d, right), dot(d, up), dot(d, fwd)]; };
+  const toScreen = q => [w/2 + focal * q[0] / q[2], h/2 - focal * q[1] / q[2]];
+  return { toView, toScreen, near: 0.1 };
+}
+function seg(ctx, cam, A, B) {                     // відрізок з відсіканням по ближній площині
+  let a = cam.toView(A), b = cam.toView(B);
+  if (a[2] < cam.near && b[2] < cam.near) return;
+  if (a[2] < cam.near || b[2] < cam.near) {
+    const k = (cam.near - a[2]) / (b[2] - a[2]), m = add(a, scale(sub(b, a), k));
+    if (a[2] < cam.near) a = m; else b = m;
+  }
+  const p = cam.toScreen(a), q = cam.toScreen(b);
+  ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
+}
+function dotAt(ctx, cam, P, r, fill) { const q = cam.toView(P); if (q[2] < cam.near) return null;
+  const s = cam.toScreen(q); ctx.fillStyle = fill; ctx.beginPath(); ctx.arc(s[0], s[1], r, 0, 7); ctx.fill(); return s; }
+function label(ctx, cam, P, text, color, dx = 6, dy = -6) { const q = cam.toView(P); if (q[2] < cam.near) return;
+  const s = cam.toScreen(q); ctx.fillStyle = color; ctx.fillText(text, s[0] + dx, s[1] + dy); }
+
+const isOn = i => i === selected || i === hoverWorld || i === hoverImage;
+function hitPoint(i) {                               // де промінь вершини перетинає площину зображення
+  const { R, t, C } = S, Xc = add(mv(R, V[i]), t);
+  return add(C, scale(sub(V[i], C), (physical ? -1 : 1) * planeDepth() / Xc[2]));
+}
+
+function drawWorld() {
+  const { ctx, w, h } = fit($("world")), cam = viewer(w, h);
+  ctx.clearRect(0, 0, w, h); ctx.lineCap = "round";
+  ctx.font = "600 13px " + COL.mono;
+  // земля
+  ctx.strokeStyle = COL.grid; ctx.lineWidth = 1;
+  for (let x = -8; x <= 8; x += 2) seg(ctx, cam, [x,-10,0], [x,18,0]);
+  for (let y = -10; y <= 18; y += 2) seg(ctx, cam, [-8,y,0], [8,y,0]);
+  // осі світу
+  [[[2.5,0,0], COL.red, "X"], [[0,2.5,0], COL.teal, "Y"], [[0,0,2.5], COL.blue, "Z"]].forEach(([v, c, n]) => {
+    ctx.strokeStyle = c; ctx.lineWidth = 2.5; seg(ctx, cam, [0,0,0], v); label(ctx, cam, scale(v, 1.12), n, c, -4, 4); });
+  label(ctx, cam, [0,0,0], "початок світу", COL.muted, 8, 16);
+  // будиночок
+  ctx.strokeStyle = COL.text; ctx.lineWidth = 1.7;
+  E.forEach(([a, b]) => seg(ctx, cam, V[a], V[b]));
+  // промені
+  const { R, C, proj } = S, Rt = T(R);
+  const hits = V.map((X, i) => proj[i].s > 0 ? hitPoint(i) : null);
+  V.forEach((X, i) => { if (!hits[i]) return; const on = isOn(i);
+    ctx.strokeStyle = on ? COL.amber : COL.line; ctx.lineWidth = on ? 2.2 : 1;
+    seg(ctx, cam, X, physical ? hits[i] : C);
+  });
+  // камера: піраміда, площина зображення, осі
+  const Kinv = invert3(S.K);
+  const depthF = planeDepth();
+  let corners = [[0,0,1],[W,0,1],[W,H,1],[0,H,1]].map(c => add(C, scale(mv(Rt, mv(Kinv, c)), depthF)));
+  if (physical) corners = corners.map(P => sub(C, sub(P, C)));
+  ctx.strokeStyle = COL.muted; ctx.lineWidth = 1; corners.forEach(P => seg(ctx, cam, C, P));
+  ctx.strokeStyle = COL.blue; ctx.lineWidth = 2; corners.forEach((P, i) => seg(ctx, cam, P, corners[(i+1) % 4]));
+  ctx.setLineDash([6, 5]); ctx.strokeStyle = COL.blue; ctx.lineWidth = 1; seg(ctx, cam, C, add(C, scale(R[2], Math.max(6, depthF + 1)))); ctx.setLineDash([]);
+  // відстань від центру до площини — і є фокусна; K⁻¹·(cx, cy, 1) = (0, 0, 1), тож головна точка лежить на осі z
+  const pp = add(C, scale(R[2], physical ? -depthF : depthF));
+  ctx.strokeStyle = COL.amber; ctx.lineWidth = 2.2; seg(ctx, cam, C, pp);
+  label(ctx, cam, scale(add(C, pp), 0.5), `f = ${S.K[0][0].toFixed(0)} px`, COL.amber, 12, -16);
+  [[R[0], COL.red, "x"], [R[1], COL.teal, "y"], [R[2], COL.blue, "z"]].forEach(([a, c, n]) => {
+    ctx.strokeStyle = c; ctx.lineWidth = 2; seg(ctx, cam, C, add(C, scale(a, 1.3))); label(ctx, cam, add(C, scale(a, 1.45)), n, c, -3, 4); });
+  // точки на площині, вершини, центр
+  hits.forEach((P, i) => { if (P) dotAt(ctx, cam, P, isOn(i) ? 4.5 : 2.4, isOn(i) ? COL.amber : COL.teal); });
+  screenPts.world = V.map((X, i) => dotAt(ctx, cam, X, isOn(i) ? 6 : 3.2, isOn(i) ? COL.amber : COL.text));
+  dotAt(ctx, cam, C, 6, COL.red); label(ctx, cam, C, "C", COL.red, 9, -8);
+  $("worldCaption").textContent = (physical ? "Промені перетинаються в отворі — на задній стінці зображення перевернуте."
+                                            : "Промінь від точки через центр C до площини зображення.")
+    + " Площина стоїть на відстані f від центру; розмір сенсора сталий.";
+}
+function invert3(m) {
+  const [a,b,c] = m[0], [d,e,f] = m[1], [g,h,i] = m[2];
+  const A = e*i-f*h, B = -(d*i-f*g), Cc = d*h-e*g, det = a*A + b*B + c*Cc;
+  return [[A, -(b*i-c*h), b*f-c*e], [B, a*i-c*g, -(a*f-c*d)], [Cc, -(a*h-b*g), a*e-b*d]].map(r => r.map(v => v / det));
+}
+
+const screenPts = { world: [], image: [] };
+function drawImage() {
+  const { ctx, w, h } = fit($("image"));
+  ctx.clearRect(0, 0, w, h);
+  const top = 44, pad = 0.05, s = Math.min(w / (W * (1 + 2*pad)), (h - top) / (H * (1 + 2*pad)));
+  const ox = (w - W*s) / 2, oy = top + (h - top - H*s) / 2;
+  const toC = ([u, v]) => physical ? [ox + (W - u) * s, oy + (H - v) * s] : [ox + u * s, oy + v * s];
+  ctx.fillStyle = COL.panel; ctx.fillRect(ox, oy, W*s, H*s);
+  ctx.strokeStyle = COL.blue; ctx.lineWidth = 1.5; ctx.strokeRect(ox, oy, W*s, H*s);
+  ctx.save(); ctx.beginPath(); ctx.rect(ox - W*s*pad, oy - H*s*pad, W*s*(1+2*pad), H*s*(1+2*pad)); ctx.clip();
+  const { proj, K } = S;
+  ctx.strokeStyle = COL.text; ctx.lineWidth = 1.6;
+  E.forEach(([a, b]) => { if (proj[a].s <= 0 || proj[b].s <= 0) return;
+    const p = toC(proj[a].uv), q = toC(proj[b].uv); ctx.beginPath(); ctx.moveTo(...p); ctx.lineTo(...q); ctx.stroke(); });
+  screenPts.image = proj.map((p, i) => { if (p.s <= 0) return null; const c = toC(p.uv);
+    const on = isOn(i);
+    ctx.fillStyle = on ? COL.amber : COL.text; ctx.beginPath(); ctx.arc(c[0], c[1], on ? 5 : 2.6, 0, 7); ctx.fill(); return c; });
+  // головна точка й центр кадру
+  const pp = toC([K[0][2], K[1][2]]), cc = toC([W/2, H/2]);
+  ctx.strokeStyle = COL.teal; ctx.lineWidth = 2; ctx.beginPath();
+  ctx.moveTo(pp[0]-8, pp[1]); ctx.lineTo(pp[0]+8, pp[1]); ctx.moveTo(pp[0], pp[1]-8); ctx.lineTo(pp[0], pp[1]+8); ctx.stroke();
+  ctx.strokeStyle = COL.muted; ctx.lineWidth = 1.2; ctx.beginPath();
+  ctx.moveTo(cc[0]-5, cc[1]-5); ctx.lineTo(cc[0]+5, cc[1]+5); ctx.moveTo(cc[0]+5, cc[1]-5); ctx.lineTo(cc[0]-5, cc[1]+5); ctx.stroke();
+  const sel = proj[selected];
+  if (sel.s > 0) { const c = toC(sel.uv); ctx.fillStyle = COL.amber; ctx.font = "600 12.5px " + COL.mono;
+    ctx.fillText(`(${sel.uv[0].toFixed(0)}, ${sel.uv[1].toFixed(0)})`, c[0] + 9, c[1] - 8); }
+  ctx.restore();
+  const inside = proj.filter(p => p.s > 0 && p.uv[0] >= 0 && p.uv[0] <= W && p.uv[1] >= 0 && p.uv[1] <= H).length;
+  $("imageCaption").textContent = (physical ? "Кадр перевернутий, як на задній стінці камери обскури" : "Кадр 1280 × 720 px")
+    + ` — у кадрі ${inside} з ${V.length} вершин. Хрестик — головна точка, косий — центр кадру.`;
+}
+
+// ───────────────────────── числа
+const f = (v, d = 1) => (Math.abs(v) < 5e-10 ? 0 : v).toFixed(d);
+function matrix(el, rows, digits, sepAt = -1) {
+  el.style.gridTemplateColumns = `repeat(${rows[0].length}, auto)`;
+  el.innerHTML = rows.map(r => r.map((v, j) => `<span${j === sepAt ? ' class="sep"' : ""}>${f(v, typeof digits === "function" ? digits(j) : digits)}</span>`).join("")).join("");
+}
+function drawNumbers() {
+  const { K, R, t, M, C } = S;
+  matrix($("matK"), K, 1);
+  matrix($("matRT"), R.map((r, i) => [...r, t[i]]), j => (j < 3 ? 3 : 2), 3);
+  matrix($("matM"), M, 1, 3);
+  const X = V[selected], Xc = add(mv(R, X), t), KX = mv(K, Xc);
+  $("pointName").textContent = `«${NAMES[selected]}»`;
+  const v3 = (a, d) => `[${a.map(x => f(x, d).padStart(7)).join("")} ]`;
+  let text = `світ     X_w = ${v3(X, 2)}\n<span class="note">камера   X_c = R·X_w + t</span>\n             ${v3(Xc, 2)}\nK·X_c      = ${v3(KX, 0)}\n`;
+  text += Xc[2] > 0
+    ? `<span class="hit">піксель  (u, v) = (${f(KX[0]/KX[2])}, ${f(KX[1]/KX[2])})</span>\nмасштаб  s = Z_c = ${f(Xc[2], 2)} м`
+    : `<span class="warn">s = ${f(Xc[2], 2)} ≤ 0 — точка позаду камери, зображення не існує</span>`;
+  $("steps").innerHTML = text;
+  $("ct").innerHTML = `C     = ${v3(C, 2)}\nt=−RC = ${v3(t, 2)}`;
+}
+
+function render() { compute(); drawWorld(); drawImage(); drawNumbers(); }
+// перерисовуємо не частіше, ніж раз на кадр екрана
+let raf = 0;
+const schedule = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); }); };
+
+// ───────────────────────── взаємодія
+IDS.forEach(id => $(id).addEventListener("input", schedule));
+$("vertex").addEventListener("change", e => { selected = +e.target.value; schedule(); });
+function setPlane(p) { physical = p; $("physical").setAttribute("aria-pressed", String(p)); $("virtual").setAttribute("aria-pressed", String(!p)); schedule(); }
+$("virtual").addEventListener("click", () => setPlane(false));
+$("physical").addEventListener("click", () => setPlane(true));
+$("reset").addEventListener("click", () => { IDS.forEach(id => $(id).value = DEFAULTS[id]); selected = 8; $("vertex").value = 8;
+  view = { ...VIEW0, target: [...VIEW0.target] }; setPlane(false); });
+
+function nearest(pts, x, y, r = 14) { let best = -1, bd = r * r;
+  pts.forEach((p, i) => { if (!p) return; const d = (p[0]-x)**2 + (p[1]-y)**2; if (d < bd) { bd = d; best = i; } }); return best; }
+function tip(el, i, x, y) { if (i < 0) { el.style.display = "none"; return; }
+  el.textContent = NAMES[i]; el.style.display = "block"; el.style.left = (x + 14) + "px"; el.style.top = (y - 10) + "px"; }
+
+const world = $("world"); let drag = null; const pointers = new Map();
+world.addEventListener("contextmenu", e => e.preventDefault());
+world.addEventListener("pointerdown", e => { world.setPointerCapture(e.pointerId); pointers.set(e.pointerId, [e.clientX, e.clientY]);
+  drag = { x: e.clientX, y: e.clientY, pan: e.shiftKey || e.button === 2, moved: false, pinch: null }; });
+world.addEventListener("pointermove", e => {
+  const r = world.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  if (pointers.has(e.pointerId)) pointers.set(e.pointerId, [e.clientX, e.clientY]);
+  if (drag && pointers.size === 2) {                 // щипок — масштаб
+    const [a, b] = [...pointers.values()], d = Math.hypot(a[0]-b[0], a[1]-b[1]);
+    if (drag.pinch) view.dist = Math.min(80, Math.max(6, view.dist * drag.pinch / d));
+    drag.pinch = d; drag.moved = true; schedule(); return;
+  }
+  if (drag) {
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
+    if (Math.abs(dx) + Math.abs(dy) > 1) drag.moved = true;
+    if (drag.pan) { const k = view.dist * 0.0016;
+      const right = [-Math.sin(view.az), Math.cos(view.az), 0], up = [0, 0, 1];
+      view.target = add(view.target, add(scale(right, dx * k), scale(up, dy * k)));
+    } else { view.az -= dx * 0.008; view.el = Math.min(1.45, Math.max(-0.2, view.el + dy * 0.008)); }
+    schedule(); return;
+  }
+  const i = nearest(screenPts.world, x, y); if (i !== hoverWorld) { hoverWorld = i; schedule(); } tip($("tipWorld"), i, x, y);
+});
+const endDrag = e => { pointers.delete(e.pointerId);
+  if (drag && !drag.moved) { const r = world.getBoundingClientRect(), i = nearest(screenPts.world, e.clientX - r.left, e.clientY - r.top);
+    if (i >= 0) { selected = i; $("vertex").value = i; schedule(); } }
+  if (pointers.size === 0) drag = null;
+  else if (drag) { const [p] = pointers.values(); drag.x = p[0]; drag.y = p[1]; drag.pinch = null; } };   // після щипка — без стрибка
+world.addEventListener("pointerup", endDrag); world.addEventListener("pointercancel", endDrag);
+world.addEventListener("pointerleave", () => { if (!drag) { hoverWorld = -1; tip($("tipWorld"), -1); schedule(); } });
+world.addEventListener("wheel", e => { e.preventDefault(); view.dist = Math.min(80, Math.max(6, view.dist * Math.exp(e.deltaY * 0.0012))); schedule(); }, { passive: false });
+world.addEventListener("dblclick", () => { view = { ...VIEW0, target: [...VIEW0.target] }; schedule(); });
+
+const image = $("image");
+image.addEventListener("pointermove", e => { const r = image.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  const i = nearest(screenPts.image, x, y); if (i !== hoverImage) { hoverImage = i; schedule(); } tip($("tipImage"), i, x, y); });
+image.addEventListener("pointerleave", () => { hoverImage = -1; tip($("tipImage"), -1); schedule(); });
+image.addEventListener("click", e => { const r = image.getBoundingClientRect(), i = nearest(screenPts.image, e.clientX - r.left, e.clientY - r.top);
+  if (i >= 0) { selected = i; $("vertex").value = i; schedule(); } });
+
+new ResizeObserver(schedule).observe(document.body);
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { readColors(); schedule(); });
+document.fonts && document.fonts.ready.then(schedule);
+readColors();
+render();
+</script>
+</body>
+</html>

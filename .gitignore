@@ -24,5 +24,8 @@ build/
 # artifacts/images/ комітимо: фото для демо невеликі й потрібні одразу після клонування.
 artifacts/models/**
 artifacts/kitti/**
+artifacts/middlebury/**
+artifacts/calibration_demo/**
+backup
 !artifacts/**/
 !artifacts/**/README.md

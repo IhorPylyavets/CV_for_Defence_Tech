@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Дисторсія: формула і її напрямок</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F2F3F4; --panel: #FFFFFF; --line: #D6D9DC; --text: #16181A; --muted: #5C636B; --faint: #C9CDD1;
+  --blue: #1F6FD6; --teal: #0E9C8A; --amber: #C47A00; --red: #D63A3A; --green: #1E9E57; --stage: #FAFAFB;
+  --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, "DejaVu Sans Mono", monospace;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #181919; --panel: #202121; --line: #333434; --text: #E8EAED; --muted: #9AA0A6; --faint: #3A3D40;
+    --blue: #4A9EFF; --teal: #2DD4BF; --amber: #F59E0B; --red: #EF4444; --green: #34D399; --stage: #141515;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #181919; --panel: #202121; --line: #333434; --text: #E8EAED; --muted: #9AA0A6; --faint: #3A3D40;
+  --blue: #4A9EFF; --teal: #2DD4BF; --amber: #F59E0B; --red: #EF4444; --green: #34D399; --stage: #141515;
+}
+*, *::before, *::after { box-sizing: inherit; }
+html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font: 15px/1.45 var(--sans); }
+
+.app { display: grid; grid-template-columns: 260px minmax(0, 1.5fr) minmax(0, 1fr);
+       grid-template-rows: auto minmax(0, 1fr) auto; gap: 14px; padding: 16px 18px; min-height: 100vh; }
+header { grid-column: 1 / -1; display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+h1 { font: 600 26px/1.15 var(--mono); margin: 0; letter-spacing: -0.01em; }
+.lede { color: var(--muted); margin: 4px 0 0; max-width: 66ch; }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+button { font: 500 13.5px var(--sans); color: var(--text); background: var(--panel); border: 1px solid var(--line);
+         border-radius: 8px; padding: 6px 11px; cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+aside { display: flex; flex-direction: column; gap: 12px; min-width: 0; overflow-y: auto; }
+fieldset { border: 1px solid var(--line); border-radius: 12px; margin: 0; padding: 12px 14px 6px; background: var(--panel); }
+legend { padding: 0 6px; font-weight: 600; }
+.row { display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 8px; margin-bottom: 8px; }
+.row label { font-size: 13.5px; color: var(--muted); }
+.row output { font: 13px var(--mono); min-width: 6ch; text-align: right; }
+.row input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--blue); margin: 2px 0 0; }
+.tan input[type=range] { accent-color: var(--amber); }
+.formula { font: 13px/1.6 var(--mono); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.formula .note { font: 12.5px/1.45 var(--sans); color: var(--muted); display: block; margin-top: 6px; }
+
+.stage { position: relative; background: var(--stage); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; min-height: 380px; }
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+#frame { cursor: crosshair; }
+.stage .caption { position: absolute; left: 14px; top: 10px; right: 14px; font-size: 13px; color: var(--muted); pointer-events: none; }
+
+.right { display: grid; grid-template-rows: minmax(0, 1fr) auto auto; gap: 12px; min-width: 0; }
+.right .stage { min-height: 160px; }
+.answers { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.answers h2 { font: 600 15px var(--sans); margin: 0 0 8px; }
+.answers table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.answers td { padding: 5px 0; border-top: 1px solid var(--line); vertical-align: top; }
+.answers td.num { font-family: var(--mono); text-align: right; white-space: nowrap; padding-left: 10px; }
+.answers td.err { font-family: var(--mono); text-align: right; white-space: nowrap; padding-left: 12px; font-weight: 600; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: 0; }
+.answers .sub { color: var(--muted); font-size: 12px; display: block; }
+.bad { color: var(--red); } .ok { color: var(--green); } .meh { color: var(--amber); }
+.fov { display: grid; grid-template-columns: 1fr auto auto; gap: 1px 12px; font-size: 13px; align-items: baseline; margin: 2px 0 8px; }
+.fov .head { color: var(--muted); font-size: 11.5px; text-align: right; }
+.fov b { font: 600 14px var(--mono); text-align: right; }
+.fov span.nom { color: var(--muted); font: 12px var(--mono); text-align: right; }
+.fov .lab { color: var(--muted); }
+.warn { display: none; border: 1.5px solid var(--red); border-radius: 12px; padding: 9px 12px; font-size: 13px; background: var(--panel); }
+.warn b { color: var(--red); }
+footer { grid-column: 1 / -1; color: var(--muted); font-size: 13px; max-width: 110ch; }
+
+@media (min-width: 1101px) and (min-height: 820px) { .app { height: 100vh; } .right { min-height: 0; } }
+@media (max-width: 1100px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  aside { order: 3; }
+  .stage.main { height: 56vh; }
+  .right { grid-template-rows: 220px auto; }
+}
+@media (min-width: 1101px) and (max-width: 1450px) {
+  .app { grid-template-columns: 240px minmax(0, 1.35fr) minmax(0, 1fr); }
+  .answers table { font-size: 12px; }
+}
+@media (max-width: 480px) {
+  .app { padding: 12px 16px; }
+  .answers { padding: 10px 12px; }
+  .answers table { font-size: 12px; }
+  .answers td.err { white-space: normal; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>Дисторсія: формула і її напрямок</h1>
+      <p class="lede">Тягніть точку в кадрі. Об'єктив зсуває її з ідеального місця, а далі видно, чим закінчуються чотири спроби повернути її назад.</p>
+    </div>
+    <div class="presets" role="group" aria-label="Готові об'єктиви">
+      <button type="button" data-preset="none">Без дисторсії</button>
+      <button type="button" data-preset="wide" aria-pressed="true">Ширококутний</button>
+      <button type="button" data-preset="tele">Теле</button>
+      <button type="button" data-preset="fpv">FPV · межа моделі</button>
+      <button type="button" data-preset="tilt">Перекіс складання</button>
+    </div>
+  </header>
+
+  <aside aria-label="Коефіцієнти дисторсії">
+    <fieldset>
+      <legend>Об'єктив</legend>
+      <div class="row"><label for="f">Фокусна f, px</label><output for="f"></output><input id="f" type="range" min="300" max="3500" step="10"></div>
+      <div class="fov" id="fov"></div>
+    </fieldset>
+    <fieldset>
+      <legend>Радіальна</legend>
+      <div class="row"><label for="k1">k₁</label><output for="k1"></output><input id="k1" type="range" min="-0.6" max="0.4" step="0.005"></div>
+      <div class="row"><label for="k2">k₂</label><output for="k2"></output><input id="k2" type="range" min="-0.3" max="0.3" step="0.005"></div>
+      <div class="row"><label for="k3">k₃</label><output for="k3"></output><input id="k3" type="range" min="-0.1" max="0.1" step="0.002"></div>
+    </fieldset>
+    <fieldset class="tan">
+      <legend>Тангенціальна</legend>
+      <div class="row"><label for="p1">p₁</label><output for="p1"></output><input id="p1" type="range" min="-0.01" max="0.01" step="0.0002"></div>
+      <div class="row"><label for="p2">p₂</label><output for="p2"></output><input id="p2" type="range" min="-0.01" max="0.01" step="0.0002"></div>
+    </fieldset>
+    <div class="formula">x_distorted = x · (1 + k₁r² + k₂r⁴ + k₃r⁶) + тангенц.
+      <span class="note">З ідеальних координат у спотворені — під цей напрямок підбираються коефіцієнти.</span>
+    </div>
+  </aside>
+
+  <section class="stage main" aria-label="Кадр із сіткою">
+    <canvas id="frame" aria-label="Кадр 1280 на 720 пікселів. Тягніть точку мишкою."></canvas>
+    <div class="caption" id="frameCaption"></div>
+  </section>
+
+  <div class="right">
+    <section class="stage" aria-label="Множник дисторсії від радіуса">
+      <canvas id="profile"></canvas>
+      <div class="caption" id="profileCaption">Множник 1 + k₁r² + k₂r⁴ + k₃r⁶ від радіуса; позначка — ваша точка.</div>
+    </section>
+    <div class="warn" id="warn" role="status"></div>
+    <section class="answers" aria-live="polite">
+      <h2>Одна точка — чотири відповіді</h2>
+      <table>
+        <tr><td><span class="swatch" style="border:2px solid var(--text)"></span>Ідеальна точка<span class="sub">де її поставила б pinhole-камера</span></td><td class="num" id="aIdeal"></td><td class="err"></td></tr>
+        <tr><td><span class="swatch" style="background:var(--blue)"></span>Після об'єктива<span class="sub">що реально бачить камера</span></td><td class="num" id="aDist"></td><td class="err" id="eDist"></td></tr>
+        <tr><td><span class="swatch" style="background:var(--red)"></span>«Корекція» тією ж формулою<span class="sub">x_corrected = x_d·(1 + k₁r_d² + …)</span></td><td class="num" id="aNaive"></td><td class="err bad" id="eNaive"></td></tr>
+        <tr><td><span class="swatch" style="background:var(--amber)"></span>Те саме зі зміненим знаком коефіцієнтів<span class="sub">популярна «хитрість»</span></td><td class="num" id="aFlip"></td><td class="err meh" id="eFlip"></td></tr>
+        <tr><td><span class="swatch" style="background:var(--teal)"></span>Ітеративно, як за замовчуванням в OpenCV<span class="sub" id="sCv"></span></td><td class="num" id="aCv"></td><td class="err" id="eCv"></td></tr>
+        <tr><td><span class="swatch" style="background:var(--green)"></span>Ітеративно до збіжності<span class="sub" id="sIter"></span></td><td class="num" id="aIter"></td><td class="err ok" id="eIter"></td></tr>
+      </table>
+    </section>
+  </div>
+
+  <footer>Оберненої формули немає: undistortPoints розв'язує рівняння ітеративно, і на сильній дисторсії кількох ітерацій за замовчуванням може не вистачити — тоді варто передати власний criteria (в OpenCV 4.x це окрема функція undistortPointsIter). А для цілого кадру карта initUndistortRectifyMap обходиться прямою формулою: для кожного ідеального пікселя вона питає, звідки взяти колір у спотвореному кадрі.</footer>
+</div>
+
+<script>
+"use strict";
+const W = 1280, H = 720, CX = 640, CY = 360, CV_ITER = 5;
+let F = 700;
+const PRESETS = {
+  none: { f: 700,  k1: 0, k2: 0, k3: 0, p1: 0, p2: 0 },
+  wide: { f: 600,  k1: -0.30, k2: 0.08, k3: 0, p1: 0, p2: 0 },
+  tele: { f: 3000, k1: 0.35, k2: 0, k3: 0, p1: 0, p2: 0 },
+  fpv:  { f: 700,  k1: -0.42, k2: 0.15, k3: -0.02, p1: 0, p2: 0 },
+  tilt: { f: 700,  k1: -0.10, k2: 0.02, k3: 0, p1: 0.004, p2: -0.003 },
+};
+const IDS = ["k1", "k2", "k3", "p1", "p2"];
+const ALL = ["f", ...IDS];
+const $ = id => document.getElementById(id);
+let point = [1180, 620], dragging = false;
+
+// ───────────────────────── модель OpenCV: з ідеальних нормованих координат у спотворені
+const radialOf = (r2, c) => 1 + r2*(c.k1 + r2*(c.k2 + r2*c.k3));      // 1 + k₁r² + k₂r⁴ + k₃r⁶
+function distort(x, y, c) {
+  const r2 = x*x + y*y, radial = radialOf(r2, c);
+  return [x*radial + 2*c.p1*x*y + c.p2*(r2 + 2*x*x), y*radial + c.p1*(r2 + 2*y*y) + 2*c.p2*x*y];
+}
+// обернена задача: та сама нерухома точка, яку ітерує undistortPoints
+function undistort(xd, yd, c, maxIter) {
+  let x = xd, y = yd, n = 0;
+  for (; n < maxIter; n++) {
+    const r2 = x*x + y*y, radial = radialOf(r2, c);
+    if (radial < 0) return { p: [xd, yd], n: n + 1 };   // як в OpenCV: множник від'ємний — здається й повертає x_d
+    const dx = 2*c.p1*x*y + c.p2*(r2 + 2*x*x), dy = c.p1*(r2 + 2*y*y) + 2*c.p2*x*y;
+    const nx = (xd - dx) / radial, ny = (yd - dy) / radial;
+    const step = Math.hypot(nx - x, ny - y); x = nx; y = ny;
+    if (step < 1e-13) { n++; break; }
+  }
+  return { p: [x, y], n };
+}
+// Де поліном перестає зростати: далі r_d спадає, і кілька ідеальних радіусів дають один спотворений.
+function radialFold(c) {
+  let prev = 0;
+  for (let i = 1; i <= 8000; i++) {
+    const r = i * 0.001, rd = r * radialOf(r*r, c);
+    if (rd <= prev) return { r: (i - 1) * 0.001, rdMax: prev };
+    prev = rd;
+  }
+  return null;
+}
+// Промінь для пікселя кадру; null — якщо модель не має ідеальної точки, що туди потрапляє.
+function rayFor(u, v, c, fold) {
+  const xd = (u - CX) / F, yd = (v - CY) / F, sol = undistort(xd, yd, c, 800);
+  const back = distort(...sol.p, c), res = Math.hypot(back[0] - xd, back[1] - yd);
+  if (!(res <= 1e-7) || (fold && Math.hypot(...sol.p) > fold.r)) return null;
+  const d = [sol.p[0], sol.p[1], 1], n = Math.hypot(...d); return d.map(x => x / n);
+}
+function fovBetween(a, b) { return a && b ? Math.acos(Math.min(1, a[0]*b[0] + a[1]*b[1] + a[2]*b[2])) * 180 / Math.PI : null; }
+function fieldOfView(c, fold) {
+  const real = { H: fovBetween(rayFor(0, CY, c, fold), rayFor(W, CY, c, fold)),
+                 V: fovBetween(rayFor(CX, 0, c, fold), rayFor(CX, H, c, fold)),
+                 D: fovBetween(rayFor(0, 0, c, fold), rayFor(W, H, c, fold)) };
+  const nom = { H: 2*Math.atan(CX / F), V: 2*Math.atan(CY / F), D: 2*Math.atan(Math.hypot(CX, CY) / F) };
+  Object.keys(nom).forEach(k => nom[k] *= 180 / Math.PI);
+  return { real, nom };
+}
+const toN = ([u, v]) => [(u - CX) / F, (v - CY) / F];
+const toPx = ([x, y]) => [F*x + CX, F*y + CY];
+const coeffs = () => Object.fromEntries(IDS.map(id => [id, +$(id).value]));
+const neg = c => Object.fromEntries(IDS.map(id => [id, -c[id]]));
+
+let COL = {};
+function readColors() { const cs = getComputedStyle(document.documentElement);
+  for (const k of ["text","muted","line","faint","blue","teal","amber","red","green","panel","sans","mono"]) COL[k] = cs.getPropertyValue("--" + k).trim(); }
+function fit(canvas) {
+  const r = canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  if (canvas.width !== Math.round(r.width*dpr) || canvas.height !== Math.round(r.height*dpr)) { canvas.width = Math.round(r.width*dpr); canvas.height = Math.round(r.height*dpr); }
+  const ctx = canvas.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return { ctx, w: r.width, h: r.height };
+}
+
+// ідеальна сітка в пікселях кадру — стала, рахуємо один раз
+const GRID = [];
+for (let u = -160; u <= W + 160; u += 80) { const l = []; for (let v = -160; v <= H + 160; v += 8) l.push([u, v]); GRID.push(l); }
+for (let v = -120; v <= H + 120; v += 80) { const l = []; for (let u = -160; u <= W + 160; u += 8) l.push([u, v]); GRID.push(l); }
+
+let view = null;   // відображення пікселів кадру в canvas
+function drawFrame(c, answers, fold) {
+  const { ctx, w, h } = fit($("frame"));
+  ctx.clearRect(0, 0, w, h);
+  const top = 34, marg = 0.1, s = Math.min(w / (W*(1 + 2*marg)), (h - top) / (H*(1 + 2*marg)));
+  const ox = (w - W*s) / 2, oy = top + (h - top - H*s) / 2;
+  view = { s, ox, oy };
+  const P = ([u, v]) => [ox + u*s, oy + v*s];
+  ctx.fillStyle = COL.panel; ctx.fillRect(ox, oy, W*s, H*s);
+  ctx.save(); ctx.beginPath(); ctx.rect(ox - W*s*marg, oy - H*s*marg, W*s*(1 + 2*marg), H*s*(1 + 2*marg)); ctx.clip();
+  // сітки: ідеальна та після об'єктива
+  const path = (pts, color, width) => { ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath(); let pen = false;
+    pts.forEach(p => { if (!p) { pen = false; return; } const q = P(p); pen ? ctx.lineTo(...q) : ctx.moveTo(...q); pen = true; }); ctx.stroke(); };
+  GRID.forEach(l => path(l, COL.faint, 1));
+  GRID.forEach(l => path(l.map(p => { const n = toN(p); return fold && Math.hypot(...n) > fold.r ? null : toPx(distort(...n, c)); }), COL.blue, 1.4));
+  // частина кадру, куди модель не приводить жодного променя
+  if (fold && fold.rdMax * F < Math.hypot(CX, CY)) {
+    const cc = P([CX, CY]), rad = fold.rdMax * F * s;
+    ctx.save(); ctx.beginPath(); ctx.rect(ox, oy, W*s, H*s); ctx.arc(cc[0], cc[1], rad, 0, 2*Math.PI, true); ctx.clip("evenodd");
+    ctx.fillStyle = COL.red; ctx.globalAlpha = 0.16; ctx.fillRect(ox, oy, W*s, H*s); ctx.globalAlpha = 0.45;
+    ctx.strokeStyle = COL.red; ctx.lineWidth = 1;
+    for (let k = -H*s; k < W*s; k += 10) { ctx.beginPath(); ctx.moveTo(ox + k, oy + H*s); ctx.lineTo(ox + k + H*s, oy); ctx.stroke(); }
+    ctx.restore();
+    ctx.strokeStyle = COL.red; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.arc(cc[0], cc[1], rad, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = COL.red; ctx.font = "600 12.5px " + COL.sans;
+    ctx.fillText("поза моделлю", ox + 6, oy + 16);
+  }
+  ctx.restore();
+  ctx.strokeStyle = COL.muted; ctx.lineWidth = 1.5; ctx.strokeRect(ox, oy, W*s, H*s);
+  // центр
+  const cc = P([CX, CY]); ctx.strokeStyle = COL.muted; ctx.lineWidth = 1.2; ctx.beginPath();
+  ctx.moveTo(cc[0]-6, cc[1]); ctx.lineTo(cc[0]+6, cc[1]); ctx.moveTo(cc[0], cc[1]-6); ctx.lineTo(cc[0], cc[1]+6); ctx.stroke();
+  // стрілки від спотвореної точки до відповідей
+  const arrow = (a, b, color, dash) => { const A = P(a), B = P(b), d = Math.hypot(B[0]-A[0], B[1]-A[1]); if (d < 3) return;
+    ctx.strokeStyle = color; ctx.lineWidth = 1.8; ctx.setLineDash(dash ? [5, 4] : []); ctx.beginPath(); ctx.moveTo(...A); ctx.lineTo(...B); ctx.stroke(); ctx.setLineDash([]);
+    const ang = Math.atan2(B[1]-A[1], B[0]-A[0]), L = 9; ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(...B);
+    ctx.lineTo(B[0] - L*Math.cos(ang - 0.4), B[1] - L*Math.sin(ang - 0.4)); ctx.lineTo(B[0] - L*Math.cos(ang + 0.4), B[1] - L*Math.sin(ang + 0.4)); ctx.fill(); };
+  arrow(answers.ideal, answers.dist, COL.blue, false);
+  arrow(answers.dist, answers.naive, COL.red, true);
+  arrow(answers.dist, answers.flip, COL.amber, true);
+  const mark = (p, color, kind, r = 6) => { const q = P(p); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2.2; ctx.beginPath();
+    if (kind === "x") { ctx.moveTo(q[0]-r, q[1]-r); ctx.lineTo(q[0]+r, q[1]+r); ctx.moveTo(q[0]+r, q[1]-r); ctx.lineTo(q[0]-r, q[1]+r); ctx.stroke(); }
+    else if (kind === "ring") { ctx.arc(q[0], q[1], r, 0, 7); ctx.stroke(); }
+    else { ctx.arc(q[0], q[1], r, 0, 7); ctx.fill(); } };
+  mark(answers.naive, COL.red, "x"); mark(answers.flip, COL.amber, "x");
+  mark(answers.dist, COL.blue, "dot", 5.5);
+  mark(answers.cv, COL.teal, "ring", 9);
+  mark(answers.iter, COL.green, "ring", 13);
+  mark(answers.ideal, COL.text, "ring", 7);
+  const q = P(answers.ideal); ctx.fillStyle = COL.text; ctx.beginPath(); ctx.arc(q[0], q[1], 2.5, 0, 7); ctx.fill();
+}
+
+function drawProfile(c, rPoint, fold) {
+  const { ctx, w, h } = fit($("profile"));
+  ctx.clearRect(0, 0, w, h);
+  const rMax = Math.max(Math.hypot(W - CX, H - CY) / F * 1.02, fold ? Math.min(fold.r * 1.2, 4) : 0);
+  const f = r => radialOf(r*r, c);
+  const rs = Array.from({ length: 121 }, (_, i) => rMax * i / 120), ys = rs.map(f);
+  let lo = Math.min(1, ...ys), hi = Math.max(1, ...ys); const padY = Math.max(0.02, (hi - lo) * 0.15); lo -= padY; hi += padY;
+  const cap = $("profileCaption");                     // на вузькому екрані підпис займає два рядки
+  const L = 46, R = 14, T = Math.max(40, cap.offsetTop + cap.offsetHeight + 8), B = 30, X = r => L + (w - L - R) * r / rMax, Y = v => T + (h - T - B) * (hi - v) / (hi - lo);
+  ctx.strokeStyle = COL.line; ctx.lineWidth = 1; ctx.strokeRect(L, T, w - L - R, h - T - B);
+  ctx.setLineDash([4, 4]); ctx.strokeStyle = COL.muted; ctx.beginPath(); ctx.moveTo(L, Y(1)); ctx.lineTo(w - R, Y(1)); ctx.stroke(); ctx.setLineDash([]);
+  const rEdge = (W - CX) / F; ctx.strokeStyle = COL.faint; ctx.beginPath(); ctx.moveTo(X(rEdge), T); ctx.lineTo(X(rEdge), h - B); ctx.stroke();
+  ctx.fillStyle = COL.muted; ctx.font = "12px " + COL.sans;
+  const edgeW = ctx.measureText("край кадру").width;
+  ctx.fillText("край кадру", X(rEdge) + 4 + edgeW < w - R ? X(rEdge) + 4 : X(rEdge) - 4 - edgeW, h - B - 6);
+  ctx.strokeStyle = COL.blue; ctx.lineWidth = 2.2; ctx.beginPath(); rs.forEach((r, i) => i ? ctx.lineTo(X(r), Y(ys[i])) : ctx.moveTo(X(r), Y(ys[i]))); ctx.stroke();
+  if (fold && fold.r < rMax) { ctx.strokeStyle = COL.red; ctx.lineWidth = 1.6; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.moveTo(X(fold.r), T); ctx.lineTo(X(fold.r), h - B); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = COL.red; const lbl = `загин r = ${fold.r.toFixed(2)}`, tw = ctx.measureText(lbl).width;
+    ctx.fillText(lbl, X(fold.r) + 6 + tw < w - R ? X(fold.r) + 6 : X(fold.r) - 6 - tw, h - B - 8); }
+  ctx.fillStyle = COL.text; ctx.beginPath(); ctx.arc(X(rPoint), Y(f(rPoint)), 5, 0, 7); ctx.fill();
+  ctx.fillStyle = COL.muted; ctx.font = "12px " + COL.mono;
+  ctx.fillText(hi.toFixed(2), 6, T + 10); ctx.fillText(lo.toFixed(2), 6, h - B);
+  if (Y(1) - T > 18 && h - B - Y(1) > 14) ctx.fillText("1.00", 6, Y(1) + 4);
+  ctx.fillText("r = 0", L, h - 10); ctx.fillText(`r = ${rMax.toFixed(2)}`, w - R - 60, h - 10);
+  ctx.fillStyle = COL.text; ctx.fillText(`×${f(rPoint).toFixed(3)}`, Math.min(X(rPoint) + 8, w - R - 60), Y(f(rPoint)) - 8);
+}
+
+// «5 ітерацій», але «1 ітерацію», «3 ітерації»
+const iterWord = n => { const m10 = n % 10, m100 = n % 100;
+  return m10 === 1 && m100 !== 11 ? "ітерацію" : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? "ітерації" : "ітерацій"; };
+
+function render() {
+  const c = coeffs(); F = +$("f").value;
+  ALL.forEach(id => { document.querySelector(`output[for="${id}"]`).textContent = id === "f" ? (+$(id).value).toFixed(0) : (+$(id).value).toFixed(id.startsWith("p") ? 4 : 3); });
+  const fold = radialFold(c), fv = fieldOfView(c, fold);
+  const deg = v => v == null ? "—" : v.toFixed(1) + "°";
+  $("fov").innerHTML = `<span class="lab">Поле зору</span><span class="head">реальне</span><span class="head">pinhole</span>` +
+    [["H", "горизонталь"], ["V", "вертикаль"], ["D", "діагональ"]].map(([k, name]) =>
+    `<span class="lab">${name}</span><b class="${fv.real[k] == null ? "bad" : ""}">${deg(fv.real[k])}</b><span class="nom">${deg(fv.nom[k])}</span>`).join("");
+  const outside = fold && fold.rdMax * F < Math.hypot(CX, CY);
+  $("warn").style.display = outside ? "block" : "none";
+  if (outside) $("warn").innerHTML = `<b>Поліном загинається на r = ${fold.r.toFixed(2)}</b> — далі r_d спадає, і його максимум ${fold.rdMax.toFixed(3)} менший за радіус кута кадру ${(Math.hypot(CX, CY) / F).toFixed(3)}. Заштрихованій частині кадру не відповідає жоден промінь, а undistortPoints там мовчки поверне хибні координати. OpenCV цього не перевіряє — перевіряйте монотонність після калібрування.`;
+  $("frameCaption").textContent = `Кадр 1280 × 720 px, f = ${F.toFixed(0)} px. Сіра сітка — ідеальна, синя — після об'єктива. Тягніть ідеальну точку (кільце з крапкою).`;
+  const n = toN(point), d = distort(...n, c);
+  const naive = distort(...d, c), flip = distort(...d, neg(c));
+  const cv = undistort(...d, c, CV_ITER), it = undistort(...d, c, 500);
+  const A = { ideal: point, dist: toPx(d), naive: toPx(naive), flip: toPx(flip), cv: toPx(cv.p), iter: toPx(it.p) };
+  const err = p => Math.hypot(p[0] - point[0], p[1] - point[1]);
+  const fmt = p => `(${p[0].toFixed(1)}, ${p[1].toFixed(1)})`;
+  const mrad = e => `${e.toFixed(1)} px`;
+  $("aIdeal").textContent = fmt(A.ideal);
+  $("aDist").textContent = fmt(A.dist); $("eDist").textContent = `зсув ${mrad(err(A.dist))}`;
+  $("aNaive").textContent = fmt(A.naive); $("eNaive").textContent = mrad(err(A.naive));
+  $("aFlip").textContent = fmt(A.flip); $("eFlip").textContent = mrad(err(A.flip));
+  $("aCv").textContent = fmt(A.cv);
+  const eCv = err(A.cv); $("eCv").textContent = eCv < 0.05 ? "0.0 px" : mrad(eCv);
+  $("eCv").className = "err " + (eCv < 0.5 ? "ok" : eCv < 2 ? "meh" : "bad");
+  $("sCv").textContent = `${CV_ITER} ${iterWord(CV_ITER)} — на краях сильної дисторсії може не вистачити`;
+  $("aIter").textContent = fmt(A.iter); $("eIter").textContent = `${err(A.iter).toFixed(2)} px`;
+  const beyond = fold && Math.hypot(...n) > fold.r;
+  $("sIter").textContent = beyond ? "точка за загином полінома: ітерація знаходить інший корінь" : `збіглося за ${it.n} ${iterWord(it.n)} — як undistortPoints із власним criteria`;
+  $("eIter").className = "err " + (err(A.iter) < 0.05 ? "ok" : "bad");
+  drawFrame(c, A, fold);
+  drawProfile(c, Math.hypot(...n), fold);
+}
+
+// перерисовуємо не частіше, ніж раз на кадр екрана
+let raf = 0;
+const schedule = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); }); };
+
+function applyPreset(name) {
+  const p = PRESETS[name]; ALL.forEach(id => $(id).value = p[id]);
+  document.querySelectorAll("[data-preset]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.preset === name)));
+  render();
+}
+document.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("click", () => applyPreset(b.dataset.preset)));
+ALL.forEach(id => $(id).addEventListener("input", () => {
+  document.querySelectorAll("[data-preset]").forEach(b => b.setAttribute("aria-pressed", "false")); schedule(); }));
+
+const frame = $("frame");
+function toFramePx(e) { const r = frame.getBoundingClientRect(); const x = (e.clientX - r.left - view.ox) / view.s, y = (e.clientY - r.top - view.oy) / view.s;
+  return [Math.min(W + 100, Math.max(-100, x)), Math.min(H + 100, Math.max(-100, y))]; }
+frame.addEventListener("pointerdown", e => { frame.setPointerCapture(e.pointerId); dragging = true; point = toFramePx(e); schedule(); });
+frame.addEventListener("pointermove", e => { if (dragging) { point = toFramePx(e); schedule(); } });
+const stop = () => { dragging = false; };
+frame.addEventListener("pointerup", stop); frame.addEventListener("pointercancel", stop);
+frame.addEventListener("keydown", e => { const step = e.shiftKey ? 40 : 8, m = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
+  if (m) { e.preventDefault(); point = [point[0] + m[0], point[1] + m[1]]; schedule(); } });
+frame.tabIndex = 0;
+
+new ResizeObserver(schedule).observe(document.body);
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { readColors(); schedule(); });
+document.fonts && document.fonts.ready.then(schedule);
+readColors();
+applyPreset("wide");
+</script>
+</body>
+</html>
