@@ -11,8 +11,17 @@ ipywidgets>=8      # віджети для JupyterLab 4
 ipyevents>=2       # вибір цілі мишею в demo2; 2.x — під JupyterLab 4
 python-pptx
 
+# Заняття 3 · оцінка руху та SLAM
+scipy              # розріджений розв'язувач графа поз (demo3)
+open3d             # хмари точок і ICP (ДЗ 3); колеса є лише для Python 3.10–3.12
+rerun-sdk          # 3D-візуалізація траєкторій і хмар точок (demo1, demo2)
+panel              # інтерактивна панель злиття сенсорів (demo2)
+jupyter_bokeh      # щоб panel працював у ноутбуках VS Code
+kiss-icp           # лідарний еталон (demo3); на Intel-Mac збирається з sdist
+evo                # опційно: evo_ape / evo_rpe для перевірки метрик з командного рядка
+
 # Окремими venv, бо конфліктують між собою:
-#   заняття 2, 3, 4, 11 — open3d, pycolmap
+#   заняття 4, 11       — pycolmap
 #   заняття 7, 8        — diffusers, accelerate, peft, controlnet-aux
 #   заняття 10          — PyGObject (GStreamer), aiortc, av
 #   заняття 13, 14      — dvc[s3], tritonclient[all], grad-cam, fastapi

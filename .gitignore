@@ -4,9 +4,10 @@ __pycache__/
 .virtual_documents/
 anaconda_projects/
 
-# Дані, ваги, збірки
+# Дані, ваги, збірки, кеші ноутбуків
 data/
 build/
+outputs/
 *.pt
 *.pth
 *.onnx
@@ -29,3 +30,4 @@ artifacts/calibration_demo/**
 backup
 !artifacts/**/
 !artifacts/**/README.md
+
