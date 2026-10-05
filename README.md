@@ -1,4 +1,4 @@
-# Computer Vision Advanced: від алгоритмів до Production-ready рішень
+# Computer Vision для Defence Tech та автономних систем
 
 Матеріали курсу для Middle/Senior CV Engineers, ML Engineers та AI Tech Leads.
 19 занять, 7 блоків, 8 домашніх завдань, фінальний проєкт.
