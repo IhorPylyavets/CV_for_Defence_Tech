@@ -43,7 +43,7 @@ python lessons/03-odometry-slam/lesson03_demo1_kitti_rerun.py --frames 800 --est
 
 ## Домашнє завдання
 [`homework/01-features-icp`](../../homework/01-features-icp/): ознаки, відсіювання аутлаєрів і ICP
-(OpenCV + Open3D), ≈ 1,5 год. Спирається лише на слайди й не повторює демо: у демо ознаки трекаються KLT,
+(OpenCV + Open3D), ≈ 2 год, 20 балів. Спирається лише на слайди й не повторює демо: у демо ознаки трекаються KLT,
 а Open3D та ICP не використовуються.
 
 ## Джерела
