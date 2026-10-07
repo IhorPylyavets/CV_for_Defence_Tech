@@ -1,12 +1,13 @@
-"""KITTI odometry, послідовність 00, для заняття 3 — з Google Drive курсу в artifacts/kitti/.
+"""KITTI odometry, послідовності 00 і 05, для заняття 3 — з Google Drive курсу в artifacts/kitti/.
 
     core      сірі стерео image_0/1 (усі 4541 кадр), calib.txt, times.txt, poses/00.txt  ≈ 2,4 ГБ   demo2, demo3
     velodyne  перші 500 сканів LiDAR                                                      ≈ 0,9 ГБ   demo1
+    vocab     05: ліва сіра image_0 (2761 кадр), calib.txt, times.txt, poses/05.txt     ≈ 0,7 ГБ   demo3, словник BoW
     reference траєкторії ORB-SLAM3 stereo (еталон, необов'язково)                          ≈ 2 МБ     demo3
 
 Це копія офіційних даних (https://www.cvlibs.net/datasets/kitti/eval_odometry.php, ліцензія
 CC BY-NC-SA 3.0 — лише некомерційне використання), перепакована tools/pack_kitti.py, щоб не
-качати десятки гігабайт заради однієї послідовності.
+качати десятки гігабайт заради двох послідовностей.
 
 Вже розпаковані частини пропускаються, тож скрипт можна перезапускати. Обірване завантаження
 починається спочатку.
@@ -25,16 +26,18 @@ from urllib.request import Request, urlopen
 
 # Посилання «Усі, хто має посилання» з Google Drive (можна вставити повне посилання або лише id файлу).
 PARTS = {
-    "core": dict(file="kitti00_core.zip", drive="1cFwzOa_woW17J1RfydhyJmShrVKiagpE",
+    "core": dict(file="kitti00_core.zip", drive="",
                  done="sequences/00/image_1/004540.png"),
-    "velodyne": dict(file="kitti00_velodyne_500.zip", drive="1EOiVPF7TXVZWJXSvV2Ut-tks9xEx6zE2",
+    "velodyne": dict(file="kitti00_velodyne_500.zip", drive="",
                      done="sequences/00/velodyne/000499.bin"),
+    "vocab": dict(file="kitti05_vocab.zip", drive="",
+                  done="sequences/05/image_0/002760.png"),
     # необов'язкова: без посилання просто пропускається; збирає викладач tools/orbslam3_kitti.sh
     "reference": dict(file="kitti_reference.zip", drive="", optional=True,
                       done="reference/orbslam3_stereo_00_run1.txt"),
 }
 OUT = Path(__file__).resolve().parent.parent / "artifacts" / "kitti"
-DOWNLOAD = "https://drive.usercontent.google.com/download"
+DOWNLOAD = "https://drive.usercontent.google.com/download/1RczUXhxPhHZFJh4kBDAs5emea4nlzs4C"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 
