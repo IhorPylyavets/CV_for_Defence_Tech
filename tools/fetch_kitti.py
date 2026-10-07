@@ -3,7 +3,7 @@
     core      сірі стерео image_0/1 (усі 4541 кадр), calib.txt, times.txt, poses/00.txt  ≈ 2,4 ГБ   demo2, demo3
     velodyne  перші 500 сканів LiDAR                                                      ≈ 0,9 ГБ   demo1
     vocab     05: ліва сіра image_0 (2761 кадр), calib.txt, times.txt, poses/05.txt     ≈ 0,7 ГБ   demo3, словник BoW
-    reference траєкторії ORB-SLAM3 stereo (еталон, необов'язково)                          ≈ 2 МБ     demo3
+    reference траєкторії-еталони KISS-ICP і ORB-SLAM3 stereo (необов'язково)               ≈ 2 МБ     demo3
 
 Це копія офіційних даних (https://www.cvlibs.net/datasets/kitti/eval_odometry.php, ліцензія
 CC BY-NC-SA 3.0 — лише некомерційне використання), перепакована tools/pack_kitti.py, щоб не
@@ -32,9 +32,9 @@ PARTS = {
                      done="sequences/00/velodyne/000499.bin"),
     "vocab": dict(file="kitti05_vocab.zip", drive="https://drive.google.com/file/d/1di0PtKWpRR73Ee8R6UEdHk-Gg3U4vmXE/view?usp=drive_link", optional=True,
                   done="sequences/05/image_0/002760.png"),
-    # необов'язкова: без посилання просто пропускається; збирає викладач tools/orbslam3_kitti.sh
+    # необов'язкова: без посилання просто пропускається; збирає викладач (demo3 + tools/orbslam3_kitti.sh)
     "reference": dict(file="kitti_reference.zip", drive="", optional=True,
-                      done="reference/orbslam3_stereo_00_run1.txt"),
+                      done="reference/kiss_icp_00.txt"),
 }
 OUT = Path(__file__).resolve().parent.parent / "artifacts" / "kitti"
 DOWNLOAD = "https://drive.usercontent.google.com/download"
