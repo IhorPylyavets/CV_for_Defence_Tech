@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>COLMAP Sparse Explorer</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <main id="viewport">
+    <canvas id="gl"></canvas>
+    <canvas id="overlay"></canvas>
+    <div id="hud">
+      <span id="hud-fps">– fps</span>
+      <span id="hud-count"></span>
+      <span id="hud-model"></span>
+    </div>
+    <div id="hint">drag: orbit · right/shift-drag: pan · wheel: zoom · <b>click: pick camera / point</b> · dbl-click: orbit around · ←/→: next image · V: view from camera · Esc: clear</div>
+    <div id="loading" class="hidden">
+      <div class="loading-box">
+        <div id="loading-text">Loading…</div>
+        <div class="bar"><div id="loading-bar" class="indeterminate"></div></div>
+      </div>
+    </div>
+    <div id="empty" class="hidden">
+      <div class="empty-box">
+        <h3>No dataset yet</h3>
+        <p>Download COLMAP's <b>South Building</b> sample (128 photos, ≈420 MB). It includes a reference sparse model you can open right away.</p>
+        <button id="emptyDownload" class="primary">Download South Building</button>
+        <p class="help mono">or: python download_data.py</p>
+      </div>
+    </div>
+    <div id="legend" class="hidden">
+      <div id="legend-title"></div>
+      <div class="legend-ramp"></div>
+      <div class="legend-labels"><span id="legend-lo"></span><span id="legend-hi"></span></div>
+    </div>
+    <div id="toast" class="hidden"></div>
+  </main>
+
+  <aside id="panel">
+    <header>
+      <h1>COLMAP Sparse Explorer</h1>
+      <p class="sub">Structure from motion with pycolmap: SIFT features, matching, then incremental or global mapping, giving camera poses and a sparse point cloud.</p>
+    </header>
+
+    <section>
+      <h2>Data</h2>
+      <div class="row"><label for="dataset">Dataset</label><select id="dataset"></select></div>
+      <div id="dataset-info" class="info"></div>
+      <div class="row mt"><label for="model">Model</label><select id="model"></select></div>
+      <div id="model-info" class="info"></div>
+      <div class="btns">
+        <button id="loadModel" class="small" title="Load the selected model again from disk">Reload</button>
+        <button id="deleteRun" class="small danger hidden">Delete run</button>
+        <button id="download" class="small hidden">Download dataset</button>
+      </div>
+      <div id="replay" class="hidden">
+        <div class="slider"><label>Mapping replay <span class="tip" title="Snapshots written by the incremental mapper every N registered images. The last step is the final model.">?</span></label><input id="snapIdx" type="range" min="0" max="0" step="1" value="0"><output></output></div>
+      </div>
+    </section>
+
+    <section id="recon">
+      <h2>Sparse reconstruction</h2>
+      <p class="help">COLMAP's standard pipeline: SIFT features → match image pairs → incremental mapping with bundle adjustment. Pick a preset; the defaults give the best result.</p>
+      <div id="presets">
+        <label class="preset"><input type="radio" name="preset" value="best" checked>
+          <div><b>Best quality</b> <span class="badge">recommended</span><span class="eta" data-eta="best"></span>
+          <small>All images at full resolution, every pair matched.</small></div></label>
+        <label class="preset"><input type="radio" name="preset" value="quick">
+          <div><b>Quick preview</b><span class="eta" data-eta="quick"></span>
+          <small>Every 2nd image at 1600 px. Use it to check that everything works.</small></div></label>
+        <label class="preset" id="preset-reuse"><input type="radio" name="preset" value="reuse">
+          <div><b>Mapping only</b><span class="eta" data-eta="reuse"></span>
+          <small>Reuse the features and matches in the dataset's <span class="mono">database.db</span>, run only the mapper.</small></div></label>
+      </div>
+      <details id="r-details"><summary>What will run</summary><div id="r-settings" class="kv"></div></details>
+
+      <div class="btns">
+        <button id="runBtn" class="primary">Run reconstruction</button>
+        <button id="cancelBtn" class="small danger hidden">Cancel</button>
+      </div>
+
+      <div id="job" class="hidden">
+        <div class="stage" data-stage="download"><span>Download</span><div class="bar"><div></div></div><output></output></div>
+        <div class="stage" data-stage="features"><span>Features</span><div class="bar"><div></div></div><output></output></div>
+        <div class="stage" data-stage="matching"><span>Matching</span><div class="bar"><div></div></div><output></output></div>
+        <div class="stage" data-stage="mapping"><span>Mapping</span><div class="bar"><div></div></div><output></output></div>
+        <div id="job-info" class="info"></div>
+        <label class="inline"><input type="checkbox" id="live" checked> Live preview of the mapping (load snapshots as they appear)</label>
+        <details id="logbox" open><summary>Log</summary><pre id="log"></pre></details>
+      </div>
+    </section>
+
+    <section>
+      <h2>Display</h2>
+      <div class="seg" id="colorMode">
+        <button data-mode="0" class="on">RGB</button>
+        <button data-mode="1">Error</button>
+        <button data-mode="2">Track</button>
+        <button data-mode="3">Height</button>
+      </div>
+      <p class="help" id="color-help"></p>
+      <div class="slider"><label>Point size</label><input id="pointSize" type="range" min="0.5" max="8" step="0.25" value="2"><output></output></div>
+      <div class="slider"><label>Max reproj. error</label><input id="maxErr" type="range" min="0.1" max="4" step="0.05" value="4"><output></output></div>
+      <div class="slider"><label>Min track length</label><input id="minTrack" type="range" min="2" max="15" step="1" value="2"><output></output></div>
+      <div class="slider"><label>Camera size</label><input id="camSize" type="range" min="0.005" max="0.25" step="0.005" value="0.05"><output></output></div>
+      <div class="slider"><label>Photo overlay</label><input id="photoAlpha" type="range" min="0" max="1" step="0.05" value="0.5"><output></output></div>
+      <div class="checks">
+        <label><input type="checkbox" id="showPoints" checked> Points</label>
+        <label><input type="checkbox" id="showCams" checked> Cameras</label>
+        <label><input type="checkbox" id="showPlanes"> Image planes</label>
+        <label><input type="checkbox" id="showPath"> Camera path</label>
+        <label><input type="checkbox" id="showGrid" checked> Ground grid</label>
+        <label><input type="checkbox" id="align" checked> Align up axis</label>
+        <label><input type="checkbox" id="sizeAtten" checked> Size by distance</label>
+        <label><input type="checkbox" id="autoRotate"> Auto-rotate</label>
+      </div>
+    </section>
+
+    <section id="stats-sec" class="hidden">
+      <h2>Statistics</h2>
+      <div id="stats" class="kv"></div>
+      <div class="chart-title">Track length (images per 3D point)</div>
+      <div class="chart"><canvas id="histTrack" height="110"></canvas><div class="chart-tip hidden"></div></div>
+      <div class="chart-title">Reprojection error per point (px)</div>
+      <div class="chart"><canvas id="histErr" height="110"></canvas><div class="chart-tip hidden"></div></div>
+    </section>
+
+    <section id="insp-img" class="hidden">
+      <h2>Image <span id="img-title" class="mono"></span></h2>
+      <div class="imgwrap"><canvas id="imgCanvas"></canvas></div>
+      <div class="plot-legend">
+        <span><i style="background:var(--c-tri)"></i>triangulated keypoint</span>
+        <span><i style="background:var(--c-untri)"></i>not triangulated</span>
+        <span><i style="background:var(--c-sel)"></i>selected point</span>
+      </div>
+      <label class="inline"><input type="checkbox" id="showUntri"> Show untriangulated keypoints</label>
+      <div id="img-info" class="kv"></div>
+      <div class="btns">
+        <button id="prevImg" class="small">← Prev</button>
+        <button id="nextImg" class="small">Next →</button>
+        <button id="viewFrom" class="small">View from this camera (V)</button>
+        <button id="clearImg" class="small">Clear</button>
+      </div>
+      <p class="help">Click a green keypoint to select its 3D point.</p>
+    </section>
+
+    <section id="insp-pt" class="hidden">
+      <h2>3D point <span id="pt-title" class="mono"></span></h2>
+      <div class="insp-summary">
+        <div class="swatch-wrap"><div id="pt-swatch" class="swatch"></div><span>colour</span></div>
+        <div id="pt-info" class="kv"></div>
+      </div>
+      <div class="strip-label">Track: the same point in every image that sees it (click to open the image)</div>
+      <div id="patches"></div>
+      <button id="clearPt" class="small">Clear point</button>
+    </section>
+
+    <section>
+      <h2>How it works</h2>
+      <ol class="how">
+        <li><b>Features.</b> SIFT finds keypoints in every image (scale-space extrema) and describes each with a 128-D gradient histogram.</li>
+        <li><b>Matching.</b> Descriptors are matched between image pairs (all pairs, or the next N for a video-like sequence). A RANSAC fit of the fundamental / essential matrix or homography keeps only geometrically consistent <i>inlier</i> matches.</li>
+        <li><b>Incremental mapping.</b> Start from a well-connected pair (relative pose from E, triangulate), then repeatedly register the next image by PnP against existing 3D points, triangulate new points and run bundle adjustment:
+          <div class="eq">min Σ<sub>i,j</sub> ρ( ‖ π(K<sub>c</sub>, R<sub>i</sub> X<sub>j</sub> + t<sub>i</sub>) − x<sub>ij</sub> ‖² )</div>
+          The residual for each point is its <b>reprojection error</b>, and the number of images that see it is its <b>track length</b>.</li>
+        <li><b>Global mapping</b> (GLOMAP) instead averages all relative rotations, then solves for all positions at once, and runs bundle adjustment at the end.</li>
+      </ol>
+    </section>
+  </aside>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+[submodule "nerf-pytorch"]
+	path = lessons/04-nerf-3dgs/02-nerf-visualize/nerf-pytorch
+	url = https://github.com/krrish94/nerf-pytorch.git
+[submodule "lessons/04-nerf-3dgs/02-nerf-visualize/nerf-pytorch"]
+	path = lessons/04-nerf-3dgs/02-nerf-visualize/nerf-pytorch
+	url = https://github.com/krrish94/nerf-pytorch.git

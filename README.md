@@ -13,7 +13,7 @@
 | 1 | [Вступ до курсу та як підібрати камеру](lessons/01-camera-selection/) | 1 |  |
 | 2 | [Калібрування камер та стереозір](lessons/02-calibration-stereo/) | 1 |  |
 | 3 | [Оцінка руху та основи SLAM](lessons/03-odometry-slam/) | 1 | [✔](homework/01-features-icp/) |
-| 4 | 3D-реконструкція: NeRF та 3D Gaussian Splatting | 1 |  |
+| 4 | [3D-реконструкція: NeRF та 3D Gaussian Splatting](lessons/04-nerf-3dgs/) | 1 |  |
 | 5 | Vision Transformers та мультимодальні моделі | 2 |  |
 | 6 | Zero-shot сегментація та Open-Vocabulary детекція | 2 | ✔ |
 | 7 | Генеративні моделі в CV: принципи | 2 | ✔ |

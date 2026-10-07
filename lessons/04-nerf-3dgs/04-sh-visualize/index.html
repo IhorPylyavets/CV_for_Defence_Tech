@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spherical Harmonics Explorer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <div id="main">
+    <header id="topbar">
+      <h1>Spherical Harmonics Explorer</h1>
+      <span class="dim">real SH, degree 0–3, same constants and order as 3DGS · drag to orbit, wheel to zoom</span>
+    </header>
+
+    <div id="panels">
+      <figure class="panel">
+        <figcaption>
+          <span>Colour c(d) = max(0, 0.5 + Σ<sub>k</sub> f<sub>k</sub> Y<sub>k</sub>(d))</span>
+          <div class="seg small" id="mode">
+            <button data-v="1" class="on" title="Colour painted on the unit sphere of directions">Sphere</button>
+            <button data-v="2" title="Radius = brightness, so you see which directions are bright">Lobe</button>
+          </div>
+        </figcaption>
+        <div class="stage"><canvas id="view"></canvas></div>
+      </figure>
+      <figure class="panel">
+        <figcaption><span>Basis functions Y<sub>l</sub><sup>m</sup>(d) on the unit sphere: <span class="pos">■ positive</span> <span class="neg">■ negative</span> · dark lines: Y = 0 · click to edit</span></figcaption>
+        <div class="stage" id="basis-stage"><canvas id="basis"></canvas></div>
+      </figure>
+    </div>
+  </div>
+
+  <aside id="side">
+    <section>
+      <h2>Degree</h2>
+      <div class="seg" id="degree">
+        <button data-v="0">0</button><button data-v="1">1</button><button data-v="2">2</button><button data-v="3" class="on">3</button>
+      </div>
+      <p class="help" id="deg-help"></p>
+    </section>
+
+    <section>
+      <h2>Selected coefficient <span id="sel-name" class="mono"></span></h2>
+      <p class="mono formula" id="sel-formula"></p>
+      <div class="slider"><label class="r">R</label><input id="cr" type="range" min="-2" max="2" step="0.01"><output></output></div>
+      <div class="slider"><label class="g">G</label><input id="cg" type="range" min="-2" max="2" step="0.01"><output></output></div>
+      <div class="slider"><label class="b">B</label><input id="cb" type="range" min="-2" max="2" step="0.01"><output></output></div>
+      <div class="row"><button class="small-btn" id="zero-sel">Zero this one</button></div>
+    </section>
+
+    <section>
+      <h2>Presets</h2>
+      <div class="row wrap">
+        <button class="small-btn" data-preset="gray">Gray</button>
+        <button class="small-btn" data-preset="diffuse">Diffuse only</button>
+        <button class="small-btn" data-preset="top">Lit from above</button>
+        <button class="small-btn" data-preset="rgb">x→R y→G z→B</button>
+        <button class="small-btn" data-preset="spec">Specular-ish</button>
+        <button class="small-btn" data-preset="random">Random</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>What a 3DGS camera sees</h2>
+      <p class="help">3DGS gives a whole Gaussian one colour per frame, c(d) with d = unit vector from the camera to the
+        Gaussian centre. Orbit the left view and watch it change.</p>
+      <div class="swatches">
+        <div><div class="splat" id="sw-view"></div><span>c(d), degree ≤ <b id="sw-deg"></b></span></div>
+        <div><div class="splat" id="sw-dc"></div><span>DC term only</span></div>
+      </div>
+      <p class="mono dim" id="sw-dir"></p>
+    </section>
+
+    <section>
+      <h2>Coefficients f<sub>k</sub> <span class="dim" id="count"></span></h2>
+      <table id="coefs" class="mono"></table>
+    </section>
+
+    <section>
+      <label class="check"><input type="checkbox" id="spin" checked> auto-rotate</label>
+      <label class="check"><input type="checkbox" id="axes" checked> show axes (x red, y green, z blue, z up)</label>
+    </section>
+  </aside>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Gradient check</title>
+<style>body{font:13px ui-monospace,monospace;background:#111;color:#ddd;padding:16px} .bad{color:#f66} .ok{color:#6d6}</style></head>
+<body>
+<h3>Analytic vs finite-difference gradients</h3>
+<pre id="out">running…</pre>
+<script type="module">
+import { gradCheck } from "./engine.js";
+const names = ["mean_x", "mean_y", "log_sx", "log_sy", "theta", "r", "g", "b", "opacity"];
+let text = "", worst = 0;
+for (const blend of ["additive", "alpha"]) for (const loss of ["l2", "l1"]) {
+  const rows = gradCheck(blend, loss);
+  let maxRel = 0;
+  for (const r of rows) {
+    const rel = Math.abs(r.analytic - r.numeric) / Math.max(1e-6, Math.abs(r.analytic) + Math.abs(r.numeric));
+    if (Math.abs(r.numeric) > 1e-7) maxRel = Math.max(maxRel, rel);
+  }
+  const med = rows.map((r) => Math.abs(r.analytic - r.numeric) / Math.max(1e-6, Math.abs(r.analytic) + Math.abs(r.numeric))).sort((a, b) => a - b)[rows.length >> 1];
+  worst = Math.max(worst, med);
+  text += `${blend.padEnd(9)} ${loss}: ${rows.length} params, median rel. error ${med.toExponential(2)}, max ${maxRel.toExponential(2)}\n`;
+  if (blend === "alpha" && loss === "l2") for (const r of rows.slice(0, 9)) text += `   g0 ${names[r.k].padEnd(8)} analytic ${r.analytic.toExponential(4).padStart(12)}  numeric ${r.numeric.toExponential(4).padStart(12)}\n`;
+}
+text += worst < 1e-2 ? "\nPASS" : "\nFAIL";
+document.getElementById("out").innerHTML = text;
+document.title = worst < 1e-2 ? "PASS" : "FAIL";
+</script>
+</body>
+</html>

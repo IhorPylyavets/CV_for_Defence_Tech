@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NeRF Voxel Explorer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <main id="viewport">
+    <canvas id="gl"></canvas>
+    <canvas id="overlay"></canvas>
+    <div id="hud">
+      <span id="hud-fps">– fps</span>
+      <span id="hud-res"></span>
+      <span id="hud-mode"></span>
+    </div>
+    <div id="hint">drag: orbit · right/shift-drag: pan · wheel: zoom · <b>click: inspect a ray</b> · R: reset · A: auto-rotate</div>
+    <div id="loading" class="hidden">
+      <div class="loading-box">
+        <div id="loading-text">Loading…</div>
+        <div class="bar"><div id="loading-bar"></div></div>
+      </div>
+    </div>
+    <div id="legend" class="hidden">
+      <div id="legend-title"></div>
+      <div class="legend-ramp"></div>
+      <div class="legend-labels"><span id="legend-lo"></span><span id="legend-hi"></span></div>
+    </div>
+  </main>
+
+  <aside id="panel">
+    <header>
+      <h1>NeRF Voxel Explorer</h1>
+      <p class="sub">An MLP radiance field baked into a voxel grid and rendered by alpha compositing, with no network calls at render time.</p>
+    </header>
+
+    <section>
+      <h2>Scene</h2>
+      <div class="row"><label for="scene">Baked scene</label><select id="scene"></select></div>
+      <div id="scene-info" class="info"></div>
+    </section>
+
+    <section>
+      <h2>Render</h2>
+      <div class="seg" id="mode">
+        <button data-mode="0" class="on">RGB</button>
+        <button data-mode="1">Depth</button>
+        <button data-mode="2">Opacity</button>
+        <button data-mode="3">Density</button>
+      </div>
+      <p class="help" id="mode-help"></p>
+
+      <div class="slider"><label>Samples / ray <span class="tip" title="Number of steps across the bounding-box diagonal. Step size δ = diagonal / samples.">?</span></label><input id="steps" type="range" min="16" max="1024" step="16" value="320"><output></output></div>
+      <div class="slider"><label>Density scale σ×</label><input id="sigmaScale" type="range" min="-2" max="2" step="0.05" value="0"><output></output></div>
+      <div class="slider"><label>Density cutoff σ<sub>min</sub></label><input id="sigmaThresh" type="range" min="0" max="200" step="1" value="0"><output></output></div>
+      <div class="slider"><label>Resolution</label><input id="renderScale" type="range" min="0.25" max="1" step="0.05" value="1"><output></output></div>
+      <div class="slider"><label>Field of view</label><input id="fov" type="range" min="15" max="90" step="1" value="40"><output></output></div>
+
+      <div class="checks">
+        <label><input type="checkbox" id="viewdep" checked> View-dependent colour (SH)</label>
+        <label><input type="checkbox" id="early" checked> Early ray termination</label>
+        <label><input type="checkbox" id="jitter"> Jitter samples (stratified)</label>
+        <label><input type="checkbox" id="ortho"> Orthographic camera</label>
+        <label><input type="checkbox" id="whiteBg" checked> White background</label>
+        <label><input type="checkbox" id="showBox" checked> Show bounding box</label>
+        <label><input type="checkbox" id="autoRotate"> Auto-rotate</label>
+      </div>
+    </section>
+
+    <section>
+      <h2>Voxel slice</h2>
+      <div class="seg" id="sliceAxis">
+        <button data-axis="-1" class="on">Off</button>
+        <button data-axis="0">X</button>
+        <button data-axis="1">Y</button>
+        <button data-axis="2">Z</button>
+      </div>
+      <div class="slider"><label>Position</label><input id="slicePos" type="range" min="0" max="1" step="0.001" value="0.5"><output></output></div>
+      <div class="slider"><label>Slice opacity</label><input id="sliceAlpha" type="range" min="0.1" max="1" step="0.05" value="0.85"><output></output></div>
+      <p class="help">Shows the stored σ values on one plane of the grid (log scale), with a line every 8 voxels.</p>
+    </section>
+
+    <section id="inspector">
+      <h2>Ray inspector</h2>
+      <p class="help" id="insp-empty">Click a pixel to trace its ray. You get each sample's σ, α, transmittance T and weight w = T·α. Orbit afterwards to see the ray in 3D.</p>
+      <div id="insp-body" class="hidden">
+        <div class="insp-summary">
+          <div class="swatch-wrap"><div id="insp-swatch" class="swatch"></div><span>pixel</span></div>
+          <div id="insp-stats" class="insp-stats"></div>
+        </div>
+        <canvas id="plot" width="340" height="190"></canvas>
+        <div class="plot-legend">
+          <span><i style="background:var(--c-sigma)"></i>σ (norm.)</span>
+          <span><i style="background:var(--c-alpha)"></i>α</span>
+          <span><i style="background:var(--c-trans)"></i>T</span>
+          <span><i style="background:var(--c-weight)"></i>w (norm.)</span>
+        </div>
+        <div class="strip-label">sample colour c<sub>i</sub></div>
+        <canvas id="strip-c" class="strip" width="340" height="14"></canvas>
+        <div class="strip-label">contribution w<sub>i</sub>·c<sub>i</sub></div>
+        <canvas id="strip-w" class="strip" width="340" height="14"></canvas>
+        <div id="insp-hover" class="mono"></div>
+        <label class="inline"><input type="checkbox" id="zoomSurface" checked> zoom plot to where the ray hits something</label>
+        <button id="clearRay" class="small">Clear ray</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>How it works</h2>
+      <ol class="how">
+        <li><b>Bake.</b> At each of the 128³ voxel centres the MLP is queried once: <span class="mono">F(x) → σ, feat</span>. Colour depends on view direction <span class="mono">d</span>, so it is evaluated for 48 directions and fitted with spherical harmonics, giving <span class="mono">c(x,d) ≈ Σ k<sub>lm</sub>(x) Y<sub>lm</sub>(d)</span>.</li>
+        <li><b>March.</b> For every pixel a ray <span class="mono">r(t) = o + t·d</span> is clipped to the grid box and sampled every <span class="mono">δ</span>. σ and the SH coefficients come from trilinear texture lookups instead of MLP calls.</li>
+        <li><b>Composite.</b>
+          <div class="eq">α<sub>i</sub> = 1 − exp(−σ<sub>i</sub> δ)</div>
+          <div class="eq">T<sub>i</sub> = ∏<sub>j&lt;i</sub> (1 − α<sub>j</sub>)</div>
+          <div class="eq">C = Σ<sub>i</sub> T<sub>i</sub> α<sub>i</sub> c<sub>i</sub> + T<sub>N</sub> · C<sub>bg</sub></div>
+          These are the same equations NeRF uses in training (<span class="mono">volume_render_radiance_field</span>).</li>
+      </ol>
+    </section>
+  </aside>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
