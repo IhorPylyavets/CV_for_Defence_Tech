@@ -26,18 +26,18 @@ from urllib.request import Request, urlopen
 
 # Посилання «Усі, хто має посилання» з Google Drive (можна вставити повне посилання або лише id файлу).
 PARTS = {
-    "core": dict(file="kitti00_core.zip", drive="",
+    "core": dict(file="kitti00_core.zip", drive="1cFwzOa_woW17J1RfydhyJmShrVKiagpE",
                  done="sequences/00/image_1/004540.png"),
-    "velodyne": dict(file="kitti00_velodyne_500.zip", drive="",
+    "velodyne": dict(file="kitti00_velodyne_500.zip", drive="1EOiVPF7TXVZWJXSvV2Ut-tks9xEx6zE2",
                      done="sequences/00/velodyne/000499.bin"),
-    "vocab": dict(file="kitti05_vocab.zip", drive="",
+    "vocab": dict(file="kitti05_vocab.zip", drive="https://drive.google.com/file/d/1di0PtKWpRR73Ee8R6UEdHk-Gg3U4vmXE/view?usp=drive_link", optional=True,
                   done="sequences/05/image_0/002760.png"),
     # необов'язкова: без посилання просто пропускається; збирає викладач tools/orbslam3_kitti.sh
     "reference": dict(file="kitti_reference.zip", drive="", optional=True,
                       done="reference/orbslam3_stereo_00_run1.txt"),
 }
 OUT = Path(__file__).resolve().parent.parent / "artifacts" / "kitti"
-DOWNLOAD = "https://drive.usercontent.google.com/download/1RczUXhxPhHZFJh4kBDAs5emea4nlzs4C"
+DOWNLOAD = "https://drive.usercontent.google.com/download"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 
