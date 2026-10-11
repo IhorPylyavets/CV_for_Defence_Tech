@@ -27,6 +27,7 @@ artifacts/models/**
 artifacts/kitti/**
 artifacts/middlebury/**
 artifacts/calibration_demo/**
+artifacts/visdrone/**
 backup
 !artifacts/**/
 !artifacts/**/README.md

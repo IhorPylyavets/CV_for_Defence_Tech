@@ -43,13 +43,13 @@ INFO = """
               Кадри або .mp4 — у artifacts/aerial_video/auair/
 
 Для обох ноутбук індексує дані в режимі DATASET="own"; ground truth задається CSV
-(lessons/05-dino-clip/gt/own_queries_template.csv), бо готових текстових описів у цих датасетів немає.
+(lessons/05-vit-multimodal/gt/own_queries_template.csv), бо готових текстових описів у цих датасетів немає.
 """
 
 OWN = """
 Власне відео (рекомендований варіант для «години польоту»):
   1. Покладіть *.mp4 / *.mov у artifacts/aerial_video/   (підтеки дозволені)
-  2. Скопіюйте lessons/05-dino-clip/gt/own_queries_template.csv -> gt/own_queries.csv і заповніть інтервали,
+  2. Скопіюйте lessons/05-vit-multimodal/gt/own_queries_template.csv -> gt/own_queries.csv і заповніть інтервали,
      де кожна ціль видно (source_id = шлях відео відносно artifacts/aerial_video без розширення).
   3. У ноутбуці: DATASET = "own"
 """
@@ -73,6 +73,12 @@ MANUAL = """
 """
 
 
+def split_ready(out_dir: Path, sp: str) -> bool:
+    """Спліт вважається наявним, якщо розпакування завершилось (.done) і послідовності реально лежать на диску."""
+    seq_dir = out_dir / f"VisDrone2019-VID-{sp}" / "sequences"
+    return (out_dir / f".{sp}.done").exists() and seq_dir.is_dir() and any(seq_dir.iterdir())
+
+
 def download_visdrone(splits, out_dir: Path, keep_zip: bool, mirrors: dict):
     try:
         import gdown
@@ -85,9 +91,10 @@ def download_visdrone(splits, out_dir: Path, keep_zip: bool, mirrors: dict):
         gid = drive_id(mirrors.get(sp, gid))
         zpath = out_dir / f"VisDrone2019-VID-{sp}.zip"
         done_flag = out_dir / f".{sp}.done"
-        if done_flag.exists():
+        if split_ready(out_dir, sp):
             print(f"[skip] {sp}: вже розпаковано")
             continue
+        done_flag.unlink(missing_ok=True)  # прапорець без даних (теку видалили) — качаємо заново
         if not zpath.exists():
             print(f"[download] VisDrone-VID {sp} ({size})")
             try:
