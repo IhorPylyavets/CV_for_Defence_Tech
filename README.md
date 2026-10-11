@@ -14,7 +14,7 @@
 | 2 | [Калібрування камер та стереозір](lessons/02-calibration-stereo/) | 1 |  |
 | 3 | [Оцінка руху та основи SLAM](lessons/03-odometry-slam/) | 1 | [✔](homework/01-features-icp/) |
 | 4 | [3D-реконструкція: NeRF та 3D Gaussian Splatting](lessons/04-nerf-3dgs/) | 1 |  |
-| 5 | Vision Transformers та мультимодальні моделі | 2 |  |
+| 5 | [Vision Transformers та мультимодальні моделі](lessons/05-vit-multimodal/) | 2 |  |
 | 6 | Zero-shot сегментація та Open-Vocabulary детекція | 2 | ✔ |
 | 7 | Генеративні моделі в CV: принципи | 2 | ✔ |
 | 8 | Адаптація, керування та синтез даних | 2 |  |
@@ -46,7 +46,7 @@ lessons/NN-slug/   одне заняття — одна папка: README з п
 homework/NN-slug/  одне ДЗ — одна папка: ноутбук для студента, README, solution/ для викладача
 artifacts/         ваги моделей, зображення й датасети для демо (у git — лише зображення)
 scripts/           налаштування середовища
-tools/             завантаження датасетів і ваг (KITTI, Middlebury, VisDrone, CLIP-моделі) і допоміжні генератори даних
+tools/             завантаження датасетів і ваг (KITTI, Middlebury, VisDrone, DINO- і CLIP-моделі) і допоміжні генератори даних
 environment.yml    conda-середовище: лише Python 3.11 і pip
 requirements.txt   усі пакети курсу, що вживаються в одному середовищі; згруповані за заняттями
 ```
@@ -151,6 +151,13 @@ pip install -r requirements.txt
   заняття 2: `python tools/fetch_middlebury.py` (≈45 МБ).
 - [`artifacts/kitti/`](artifacts/kitti/) — KITTI odometry для демо заняття 3:
   `python tools/fetch_kitti.py` (≈3 ГБ з Google Drive курсу — завантажуй заздалегідь).
+- [`artifacts/visdrone/`](artifacts/visdrone/) — VisDrone-VID для демо заняття 5:
+  `python tools/fetch_visdrone.py --splits train val test-dev` (≈11 ГБ).
+- `artifacts/models/dino/`, `artifacts/models/clip/` — DINOv2 / DINOv3 і CLIP, SigLIP 2,
+  RemoteCLIP, SkyCLIP для заняття 5: `python tools/fetch_dino_models.py` і
+  `python tools/fetch_clip_models.py`. Скрипти пишуть `manifest.json` із SHA-256, і після
+  завантаження ноутбуки працюють офлайн. DINOv3 — gated-модель: спершу прийми ліцензію на
+  Hugging Face і виконай `hf auth login` (деталі — у [README заняття](lessons/05-vit-multimodal/)).
 
 Невеликі датасети для домашніх завдань (наприклад, Redwood і Fountain у ДЗ 3) Open3D
 завантажує сам під час першого запуску в `~/open3d_data`, а не в `artifacts/`.

@@ -7,6 +7,7 @@ artifacts/
   models/   ваги (*.pt, *.onnx, *.engine, ...)
   images/   фото та кадри для демонстрацій
   kitti/    KITTI odometry для заняття 3
+  visdrone/ VisDrone-VID для заняття 5
 ```
 
 Ваги й датасети в git **не потрапляють** — лише структура тек і ці README.
