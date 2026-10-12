@@ -8,7 +8,7 @@ ultralytics>=8.3.100   # з 8.3 — YOLO11, з 8.3.100 — YOLOE (заняття
 transformers>=4.56   # з 4.56 з'явився DINOv3 (заняття 5)
 jupyterlab>=4
 ipywidgets>=8      # віджети для JupyterLab 4
-ipyevents>=2       # вибір цілі мишею в demo2; 2.x — під JupyterLab 4
+ipyevents>=2       # вибір цілі мишею (заняття 1 demo2, заняття 5 demo1 і demo3); 2.x — під JupyterLab 4
 python-pptx
 
 # Заняття 3 · оцінка руху та SLAM
@@ -22,9 +22,9 @@ tqdm               # індикатори прогресу довгих блок
 evo                # опційно: evo_ape / evo_rpe для перевірки метрик з командного рядка
 
 # Заняття 5 · ViT та мультимодальні моделі
-open_clip_torch>=3.0   # SigLIP 2, RemoteCLIP, SkyCLIP (demo2)
-scikit-learn           # linear probe, t-SNE (demo1)
-faiss-cpu              # індекс для пошуку (demo2)
+open_clip_torch>=3.0   # CLIP, SigLIP 2 (demo2, demo3), RemoteCLIP, SkyCLIP (demo3)
+scikit-learn           # linear probe (demo1, demo2)
+faiss-cpu              # k-means добору міток (demo1), індекс і PQ (demo3)
 pandas
 gdown                  # VisDrone з Google Drive
 

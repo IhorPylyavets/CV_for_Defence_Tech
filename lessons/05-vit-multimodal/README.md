@@ -26,18 +26,20 @@
 ```bash
 # з кореня репозиторію
 ./scripts/setup.sh                                          # середовище cv-advanced; пакети — у кореневому requirements.txt
-python tools/fetch_visdrone.py --splits train val test-dev  # VisDrone-VID -> artifacts/visdrone/ (~9 ГБ)
-python tools/fetch_dino_models.py                           # demo1, demo2: DINOv2, DINOv2-reg, DINOv3 -> artifacts/models/dino/
+python tools/fetch_visdrone.py --splits train val test-dev  # VisDrone-VID -> artifacts/visdrone/ (~11 ГБ)
+python tools/fetch_dino_models.py                           # demo1, demo2: DINOv2, DINOv2-reg, DINOv3 (base) і DINOv3-sat (large) -> artifacts/models/dino/
 python tools/fetch_clip_models.py                           # demo2, demo3: CLIP, SigLIP 2, RemoteCLIP, SkyCLIP -> artifacts/models/clip/
 ```
 - **Офлайн.** Скрипти `fetch_*` пишуть `manifest.json` із SHA-256 файлів; ноутбук бачить, що всі потрібні ваги на місці,
-  і сам вмикає `HF_HUB_OFFLINE=1` (`panels.setup_hf`). Після завантаження інтернет не потрібен.
+  і сам вмикає `HF_HUB_OFFLINE=1` (`panels.setup_hf`). Після завантаження інтернет не потрібен — для того розміру моделей,
+  який завантажено: `small` для CPU і `large` для самостійних завдань — окремо, `--size small` / `--size large`.
 - **DINOv3 — gated** (DINOv3 License, не Apache 2.0): прийміть умови на
   [сторінці моделі](https://huggingface.co/facebook/dinov3-vitb16-pretrain-lvd1689m), `hf auth login`,
-  потім `python tools/fetch_dino_models.py --models dinov3`. Без доступу ноутбуки пропускають DINOv3 з підказкою.
-- **Пристрій.** `DEVICE = None` у першій клітинці — cuda / mps / cpu автоматично. demo1 на CPU бере `small`-моделі й менший кадр.
+  потім `python tools/fetch_dino_models.py --models dinov3 dinov3sat`. Без доступу ноутбуки пропускають DINOv3 з підказкою,
+  а `fetch_dino_models.py` завантажує решту й завершується з кодом 1.
+- **Пристрій.** `DEVICE = None` у першій клітинці — cuda / mps / cpu автоматично. demo1 на CPU бере `small`-моделі й менший кадр (`python tools/fetch_dino_models.py --size small`).
 - **Кеш.** Кропи, ембеддинги й ключові кадри — в `outputs/demo1..3/` (у git не потрапляє). Перший прогін demo3 рахує
-  ембеддинги ~60 тис. тайлів (кілька хвилин на GPU), далі все береться з кешу.
+  ембеддинги ~21 тис. тайлів (~3 тис. ключових кадрів × 7, кілька хвилин на GPU), далі все береться з кешу.
 - **Smoke-тест без мережі** (синтетичні кадри, випадкові ваги — лише перевірка, що все запускається):
   `DEMO1_SMOKE=1 jupyter nbconvert --to notebook --execute lesson05_demo1_dino.ipynb --output smoke1.ipynb`,
   так само `DEMO3_SMOKE=1` для demo3.
@@ -49,8 +51,9 @@ python tools/fetch_clip_models.py                           # demo2, demo3: CLIP
 
 | Слайди | Демо |
 |---|---|
-| 15–17 «ViT», «Self-attention не знає, де що лежить», «Нова роздільність»; 19 «O(N²)» | demo1, розділ 1 |
-| 22 «Розрахунок, який треба зробити до вибору архітектури», 23 «Архітектурні стратегії для високої роздільності» | demo1, розділи 1–3; demo3, розділ 1 |
+| 15 «ViT», 17 «Нова роздільність», 19 «O(N²)» | demo1, розділ 1 |
+| 22 «Розрахунок, який треба зробити до вибору архітектури» | demo1, розділи 1–3; demo3, розділи 1, 3 |
+| 23 «Архітектурні стратегії для високої роздільності» | demo3, розділи 1, 6 |
 | 25–28 «Дані в обороні», «DINO: самодистиляція без міток», «DINOv2», «DINOv3» | demo1, розділи 1, 2, 4 |
 | 29 «Робочий рецепт: від сирого архіву до працюючої моделі» | demo1, розділ 3; demo2, розділ 8 |
 | 34–36 «Спільний простір», «Контрастивна функція втрат», «CLIP: Zero-Shot Classification» | demo2, розділи 1–4 |
@@ -65,7 +68,7 @@ python tools/fetch_clip_models.py                           # demo2, demo3: CLIP
 | Модель | Джерело | Як вантажиться |
 |---|---|---|
 | DINOv2, DINOv2-reg, DINOv3 | HF `facebook/dinov2-*`, `facebook/dinov3-*` | transformers, кеш `artifacts/models/dino/hf_home/hub` |
-| CLIP | OpenAI, `ViT-B-16` / `ViT-L-14`, `pretrained="openai"` | open_clip з `force_quick_gelu=True`: без нього open_clip 3.x тихо ставить GELU, і модель гіршає |
+| CLIP | OpenAI, `ViT-B-16` / `ViT-L-14`, `pretrained="openai"` | open_clip з `force_quick_gelu=True`: без нього open_clip 3.x ставить GELU лише з попередженням у лозі, і модель гіршає |
 | SigLIP 2 | HF `timm/ViT-B-16-SigLIP2`, `pretrained="webli"` | open_clip |
 | RemoteCLIP | HF `chendelong/RemoteCLIP`, `RemoteCLIP-ViT-B-32.pt` | open_clip + `load_state_dict`, як у README авторів |
 | SkyCLIP | S3 авторів SkyScript, `SkyCLIP_ViT_B32_top50pct.zip` | open_clip; для ViT-L-14 — `quick_gelu=True` |

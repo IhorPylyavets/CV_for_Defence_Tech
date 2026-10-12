@@ -578,9 +578,9 @@ def load_dino(models: Sequence[str], size: str = "base", device: Optional[str] =
             print(f"  ✗ {name}: {type(e).__name__}: {str(e).splitlines()[0][:140]}")
             if name in GATED:
                 print(f"    gated: прийміть ліцензію на https://huggingface.co/{repo}, `hf auth login`,\n"
-                      f"    потім python tools/fetch_dino_models.py --models {name}. Поки що — без {name}.")
+                      f"    потім python tools/fetch_dino_models.py --models {name} --size {dino_size(name, size)}. Поки що — без {name}.")
             else:
-                print(f"    python tools/fetch_dino_models.py --models {name}")
+                print(f"    python tools/fetch_dino_models.py --models {name} --size {dino_size(name, size)}")
     return encs
 
 
@@ -625,7 +625,7 @@ def embed_frames(enc: DinoEncoder, frames: pd.DataFrame, cache_dir: str | Path, 
 SKY_BASE_URL = "https://opendatasharing.s3.us-west-2.amazonaws.com/SkyScript/ckpt/"
 CLIP_ZOO: Dict[str, Dict[str, dict]] = {
     # OpenAI CLIP (Radford et al., 2021): еталон «вебової» моделі з softmax-втратою.
-    # Ваги навчено з QuickGELU; open_clip 3.x без force_quick_gelu тихо ставить звичайний GELU.
+    # Ваги навчено з QuickGELU; open_clip 3.x без force_quick_gelu ставить звичайний GELU лише з попередженням у лозі.
     "clip": {
         "base": dict(arch="ViT-B-16", pretrained="openai", quick_gelu=True),
         "large": dict(arch="ViT-L-14", pretrained="openai", quick_gelu=True),
@@ -682,8 +682,10 @@ def resolve_checkpoint(name: str, size: str, models_dir: str | Path = CLIP_DIR, 
     if "hf_repo" in spec:
         from huggingface_hub import hf_hub_download
 
-        return Path(hf_hub_download(spec["hf_repo"], spec["hf_file"], cache_dir=str(models_dir / "hf"),
-                                    local_files_only=not download))
+        p = Path(hf_hub_download(spec["hf_repo"], spec["hf_file"], cache_dir=str(models_dir / "hf"),
+                                 local_files_only=not download))
+        st = p.with_suffix(".safetensors")   # копія з fetch_clip_models.py --to-safetensors
+        return st if st.exists() else p
     if "url" in spec:
         zip_name = spec["url"].rsplit("/", 1)[-1]
         zpath = models_dir / "skyclip" / zip_name
