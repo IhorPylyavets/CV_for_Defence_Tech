@@ -4,7 +4,7 @@ torchvision
 opencv-python
 numpy
 matplotlib
-ultralytics>=8.3.100   # з 8.3 — YOLO11, з 8.3.100 — YOLOE (заняття 6)
+ultralytics>=8.3.100   # з 8.3 — YOLO11
 transformers>=4.56   # з 4.56 з'явився DINOv3 (заняття 5)
 jupyterlab>=4
 ipywidgets>=8      # віджети для JupyterLab 4
@@ -12,27 +12,21 @@ ipyevents>=2       # вибір цілі мишею (заняття 1 demo2, з�
 python-pptx
 
 # Заняття 3 · оцінка руху та SLAM
-scipy              # розріджений розв'язувач графа поз (demo3)
+scipy              # розріджений розв'язувач графа поз (demo3); spearmanr у занятті 5 (demo2)
 open3d             # хмари точок і ICP (ДЗ 3); колеса є лише для Python 3.10–3.12
 rerun-sdk          # 3D-візуалізація траєкторій і хмар точок (demo1, demo2)
 panel              # інтерактивна панель злиття сенсорів (demo2)
 jupyter_bokeh      # щоб panel працював у ноутбуках VS Code
 kiss-icp           # лідарний еталон (demo3); на Intel-Mac збирається з sdist
-tqdm               # індикатори прогресу довгих блоків (demo3)
+tqdm               # індикатори прогресу довгих блоків (demo3; заняття 5 demo3)
 evo                # опційно: evo_ape / evo_rpe для перевірки метрик з командного рядка
 
 # Заняття 5 · ViT та мультимодальні моделі
-open_clip_torch>=3.0   # CLIP, SigLIP 2 (demo2, demo3), RemoteCLIP, SkyCLIP (demo3)
+open_clip_torch>=3.0   # CLIP (demo2), SigLIP 2 (demo2, demo3), RemoteCLIP, SkyCLIP (demo3)
 scikit-learn           # linear probe (demo1, demo2)
 faiss-cpu              # k-means добору міток (demo1), індекс і PQ (demo3)
 pandas
 gdown                  # VisDrone з Google Drive
-
-# Заняття 6 · zero-shot сегментація
-pycocotools
-# SAM 2.1; SAM2_BUILD_CUDA=0 перед pip install — без компіляції CUDA-розширення
-SAM-2 @ git+https://github.com/facebookresearch/sam2.git
-clip @ git+https://github.com/ultralytics/CLIP.git   # текстовий енкодер для YOLOE / YOLO-World
 
 # Окремими venv, бо конфліктують між собою:
 #   заняття 4, 11       — pycolmap

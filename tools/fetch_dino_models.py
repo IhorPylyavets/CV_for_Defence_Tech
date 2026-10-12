@@ -3,7 +3,7 @@
 Ваги DINOv2 / DINOv2-reg / DINOv3 для заняття 5 (демо 1 і 2) — в artifacts/models/dino/.
 
     python tools/fetch_dino_models.py                              # dinov2, dinov2reg, dinov3 · base; dinov3sat · завжди large
-    python tools/fetch_dino_models.py --size small                 # для CPU
+    python tools/fetch_dino_models.py --models dinov2 dinov2reg dinov3 --size small   # для CPU (dinov3sat завжди ViT-L)
     python tools/fetch_dino_models.py --models dinov3sat --size large
 
 DINOv3 на Hugging Face — gated (DINOv3 License): спершу прийміть умови на сторінці моделі

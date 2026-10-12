@@ -2,6 +2,8 @@
 """
 VisDrone-VID для заняття 5 (усі три демо) — в artifacts/visdrone/.
 
+    python tools/fetch_visdrone.py --splits train val test-dev  # усе, що потрібно ноутбукам заняття 5, ≈ 11 ГБ
+
     python tools/fetch_visdrone.py                              # val + test-dev, ≈ 3,6 ГБ
     python tools/fetch_visdrone.py --splits val                 # лише val, ≈ 1,5 ГБ
     python tools/fetch_visdrone.py --dataset own                # підказка, куди класти власне відео

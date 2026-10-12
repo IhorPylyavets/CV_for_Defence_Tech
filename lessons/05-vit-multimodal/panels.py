@@ -625,7 +625,7 @@ def embed_frames(enc: DinoEncoder, frames: pd.DataFrame, cache_dir: str | Path, 
 SKY_BASE_URL = "https://opendatasharing.s3.us-west-2.amazonaws.com/SkyScript/ckpt/"
 CLIP_ZOO: Dict[str, Dict[str, dict]] = {
     # OpenAI CLIP (Radford et al., 2021): еталон «вебової» моделі з softmax-втратою.
-    # Ваги навчено з QuickGELU; open_clip 3.x без force_quick_gelu ставить звичайний GELU лише з попередженням у лозі.
+    # Ваги навчено з QuickGELU; open_clip 3.x без force_quick_gelu ставить звичайний GELU лише з UserWarning.
     "clip": {
         "base": dict(arch="ViT-B-16", pretrained="openai", quick_gelu=True),
         "large": dict(arch="ViT-L-14", pretrained="openai", quick_gelu=True),

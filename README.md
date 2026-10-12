@@ -68,7 +68,7 @@ requirements.txt   усі пакети курсу, що вживаються в 
 
 Потрібна [Miniconda](https://docs.conda.io/en/latest/miniconda.html) або Anaconda.
 Один скрипт створює conda-середовище `cv-advanced`, ставить залежності, реєструє
-ядро Jupyter і наприкінці перевіряє, що все імпортується.
+ядро Jupyter і наприкінці перевіряє, що імпортуються базові пакети (torch, OpenCV, ultralytics, ipywidgets).
 
 **Windows** (PowerShell, з кореня репозиторію):
 

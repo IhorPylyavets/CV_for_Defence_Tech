@@ -32,16 +32,17 @@ python tools/fetch_clip_models.py                           # demo2, demo3: CLIP
 ```
 - **Офлайн.** Скрипти `fetch_*` пишуть `manifest.json` із SHA-256 файлів; ноутбук бачить, що всі потрібні ваги на місці,
   і сам вмикає `HF_HUB_OFFLINE=1` (`panels.setup_hf`). Після завантаження інтернет не потрібен — для того розміру моделей,
-  який завантажено: `small` для CPU і `large` для самостійних завдань — окремо, `--size small` / `--size large`.
+  який завантажено: `small`-DINO для CPU — `fetch_dino_models.py --models dinov2 dinov2reg dinov3 --size small`,
+  `large` для самостійних завдань — `--size large` в обох `fetch_*_models.py` (у CLIP-моделей `small` немає).
 - **DINOv3 — gated** (DINOv3 License, не Apache 2.0): прийміть умови на
   [сторінці моделі](https://huggingface.co/facebook/dinov3-vitb16-pretrain-lvd1689m), `hf auth login`,
   потім `python tools/fetch_dino_models.py --models dinov3 dinov3sat`. Без доступу ноутбуки пропускають DINOv3 з підказкою,
   а `fetch_dino_models.py` завантажує решту й завершується з кодом 1.
-- **Пристрій.** `DEVICE = None` у першій клітинці — cuda / mps / cpu автоматично. demo1 на CPU бере `small`-моделі й менший кадр (`python tools/fetch_dino_models.py --size small`).
+- **Пристрій.** `DEVICE = None` у першій клітинці — cuda / mps / cpu автоматично. demo1 на CPU бере `small`-моделі й менший кадр (`python tools/fetch_dino_models.py --models dinov2 dinov2reg dinov3 --size small`).
 - **Кеш.** Кропи, ембеддинги й ключові кадри — в `outputs/demo1..3/` (у git не потрапляє). Перший прогін demo3 рахує
   ембеддинги ~21 тис. тайлів (~3 тис. ключових кадрів × 7, кілька хвилин на GPU), далі все береться з кешу.
 - **Smoke-тест без мережі** (синтетичні кадри, випадкові ваги — лише перевірка, що все запускається):
-  `DEMO1_SMOKE=1 jupyter nbconvert --to notebook --execute lesson05_demo1_dino.ipynb --output smoke1.ipynb`,
+  `DEMO1_SMOKE=1 jupyter nbconvert --to notebook --execute lesson05_demo1_dino.ipynb --output-dir outputs --output smoke1.ipynb`,
   так само `DEMO3_SMOKE=1` для demo3.
   Для повного прогону через `nbconvert` додайте `PANELS_AUTORUN=0`: панелі не малюватимуть перший результат самі.
   Інакше nbclient (він імітує віджет Output) на великих картинках зависає до тайм-ауту клітинки; у JupyterLab і VS Code проблеми немає.
@@ -52,23 +53,23 @@ python tools/fetch_clip_models.py                           # demo2, demo3: CLIP
 | Слайди | Демо |
 |---|---|
 | 15 «ViT», 17 «Нова роздільність», 19 «O(N²)» | demo1, розділ 1 |
-| 22 «Розрахунок, який треба зробити до вибору архітектури» | demo1, розділи 1–3; demo3, розділи 1, 3 |
+| 22 «Розрахунок, який треба зробити до вибору архітектури» | demo1, розділи 1–3; demo2, розділ 4; demo3, розділи 1, 3 |
 | 23 «Архітектурні стратегії для високої роздільності» | demo3, розділи 1, 6 |
-| 25–28 «Дані в обороні», «DINO: самодистиляція без міток», «DINOv2», «DINOv3» | demo1, розділи 1, 2, 4 |
+| 25–28 «Дані в обороні», «DINO: самодистиляція без міток», «DINOv2», «DINOv3» | demo1, розділи 1, 2, 4; demo2, розділ 4 (25) |
 | 29 «Робочий рецепт: від сирого архіву до працюючої моделі» | demo1, розділ 3; demo2, розділ 8 |
-| 34–36 «Спільний простір», «Контрастивна функція втрат», «CLIP: Zero-Shot Classification» | demo2, розділи 1–4 |
+| 34–36 «Спільний простір», «Контрастивна функція втрат», «CLIP: Zero-Shot Classification» | demo2, розділи 1–4; demo3, розділ 5 (34) |
 | 37–39 «Де CLIP помиляється», «Доменний розрив ракурсу», «Тепловізор» | demo2, розділи 4–7; demo3, розділ 6 (38) |
 | 41–43 «CLIP-based Image Search: Text-to-Image», «Image+Text-to-Image», «FAISS» | demo3, розділи 3–5 |
-| 46 «Як міряти мультимодальну систему» | demo1, розділи 3–4; demo2, розділи 4, 7; demo3, розділ 6 |
-| 48–49 «Human-in-the-loop», «Три зони впевненості» | demo2, розділ 6; demo3, розділ 7 |
-| 50–51 «Вузький канал: передавайте вектори, а не відео», «Split-computing в умовах РЕБ» | demo3, розділи 1, 8 |
+| 46 «Як міряти мультимодальну систему» | demo1, розділи 3–4; demo2, розділи 4, 7; demo3, розділи 2, 6 |
+| 48–49 «Human-in-the-loop», «Три зони впевненості» | demo1, розділ 4 (48); demo2, розділи 2, 6; demo3, розділ 7 |
+| 50–51 «Вузький канал: передавайте вектори, а не відео», «Split-computing в умовах РЕБ» | demo2, розділ 1 і підсумок; demo3, розділи 1, 8 |
 
 ## Звідки ваги
 
 | Модель | Джерело | Як вантажиться |
 |---|---|---|
 | DINOv2, DINOv2-reg, DINOv3 | HF `facebook/dinov2-*`, `facebook/dinov3-*` | transformers, кеш `artifacts/models/dino/hf_home/hub` |
-| CLIP | OpenAI, `ViT-B-16` / `ViT-L-14`, `pretrained="openai"` | open_clip з `force_quick_gelu=True`: без нього open_clip 3.x ставить GELU лише з попередженням у лозі, і модель гіршає |
+| CLIP | OpenAI, `ViT-B-16` / `ViT-L-14`, `pretrained="openai"` | open_clip з `force_quick_gelu=True`: без нього open_clip 3.x ставить GELU лише з `UserWarning`, і модель гіршає |
 | SigLIP 2 | HF `timm/ViT-B-16-SigLIP2`, `pretrained="webli"` | open_clip |
 | RemoteCLIP | HF `chendelong/RemoteCLIP`, `RemoteCLIP-ViT-B-32.pt` | open_clip + `load_state_dict`, як у README авторів |
 | SkyCLIP | S3 авторів SkyScript, `SkyCLIP_ViT_B32_top50pct.zip` | open_clip; для ViT-L-14 — `quick_gelu=True` |

@@ -1,8 +1,9 @@
 # VisDrone-VID
 
-Дані для заняття 5 (Демо 2, текстовий пошук по аеровідео). У git не потрапляють — лише цей README.
+Дані для заняття 5 (усі три демо). У git не потрапляють — лише цей README.
 
 ```
+python tools/fetch_visdrone.py --splits train val test-dev   # усе для ноутбуків заняття 5, ≈ 11 ГБ
 python tools/fetch_visdrone.py                  # val + test-dev, ≈ 3,6 ГБ
 python tools/fetch_visdrone.py --splits val     # лише val, ≈ 1,5 ГБ
 ```
