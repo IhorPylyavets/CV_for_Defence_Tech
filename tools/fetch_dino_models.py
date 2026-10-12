@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """
-Ваги DINOv2 / DINOv2-reg / DINOv3 для заняття 5 (Демо 1) — в artifacts/models/dino/.
+Ваги DINOv2 / DINOv2-reg / DINOv3 для заняття 5 (демо 1 і 2) — в artifacts/models/dino/.
 
-    python tools/fetch_dino_models.py                              # dinov2, dinov2reg, dinov3 · base
-    python tools/fetch_dino_models.py --size small                 # для CPU
+    python tools/fetch_dino_models.py                              # dinov2, dinov2reg, dinov3 · base; dinov3sat · завжди large
+    python tools/fetch_dino_models.py --models dinov2 dinov2reg dinov3 --size small   # для CPU (dinov3sat завжди ViT-L)
     python tools/fetch_dino_models.py --models dinov3sat --size large
 
 DINOv3 на Hugging Face — gated (DINOv3 License): спершу прийміть умови на сторінці моделі
@@ -22,19 +22,19 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO / "lessons" / "05-dino-clip"))
-import dino_features as D  # noqa: E402
+sys.path.insert(0, str(REPO / "lessons" / "05-vit-multimodal"))
+import panels as D  # noqa: E402
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--models", nargs="+", default=["dinov2", "dinov2reg", "dinov3"], choices=list(D.DINO_ZOO))
+    ap.add_argument("--models", nargs="+", default=["dinov2", "dinov2reg", "dinov3", "dinov3sat"], choices=list(D.DINO_ZOO))
     ap.add_argument("--size", default="base", choices=["small", "base", "large"])
     args = ap.parse_args()
 
-    mdir = D.MODELS_DIR
+    mdir = D.DINO_DIR
     mdir.mkdir(parents=True, exist_ok=True)
-    os.environ.setdefault("HF_HOME", str(D.HF_HOME))
+    # HF_HOME не чіпаємо: інакше huggingface_hub не побачить токен `hf auth login` для gated DINOv3.
     os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
     from huggingface_hub import snapshot_download
     from huggingface_hub.errors import GatedRepoError
@@ -43,12 +43,12 @@ def main():
     manifest = json.loads(manifest_f.read_text()) if manifest_f.exists() else {}
     failed = []
     for name in args.models:
-        size = args.size if args.size in D.DINO_ZOO[name] else next(iter(D.DINO_ZOO[name]))
-        repo = D.repo_id(name, size)
+        size = D.dino_size(name, args.size)
+        repo = D.DINO_ZOO[name][size]
         key = f"{name}-{size}"
         print(f"\n=== {key}: {repo}")
         try:
-            local = Path(snapshot_download(repo, allow_patterns=["*.json", "*.safetensors", "*.txt"]))
+            local = Path(snapshot_download(repo, allow_patterns=["*.json", "*.safetensors", "*.txt"], cache_dir=str(D.DINO_HUB)))
         except GatedRepoError:
             print(f"  ✗ gated: прийміть ліцензію на https://huggingface.co/{repo} і залогіньтесь (`hf auth login`)")
             failed.append(key)
@@ -59,11 +59,11 @@ def main():
         files = sorted(p for p in local.rglob("*") if p.is_file())
         manifest[key] = dict(repo=repo, patch=enc.patch, registers=enc.n_reg, dim=enc.dim, n_params=enc.n_params,
                              files=[dict(path=Path(os.path.relpath(p.resolve(), REPO)).as_posix(),
-                                         sha256=D.A._sha256(p.resolve())) for p in files])
+                                         sha256=D._sha256(p.resolve())) for p in files])
 
     manifest_f.write_text(json.dumps(manifest, indent=2, ensure_ascii=False))
     print(f"\nManifest: {manifest_f}")
-    print(f"Для роботи офлайн: HF_HOME={os.environ['HF_HOME']} HF_HUB_OFFLINE=1")
+    print("Ноутбуки заняття 5 тепер працюють офлайн (HF_HUB_OFFLINE=1 вмикається автоматично).")
     if failed:
         print(f"Не завантажено: {', '.join(failed)}")
         sys.exit(1)

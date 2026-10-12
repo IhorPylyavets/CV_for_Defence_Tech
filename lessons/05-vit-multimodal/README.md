@@ -1,82 +1,97 @@
-# Демо 1 · DINOv2 vs DINOv3 на VisDrone (Заняття 5)
+# Заняття 5. Vision Transformers та мультимодальні моделі
 
-Фічі без жодної мітки, чотири блоки (слайди 17, 19, 22, 26–30, 46):
-1. **Що бачить модель**: PCA патч-фіч, високонормні токени, увага [CLS]; DINOv2 → DINOv2 + регістри → DINOv3; patch 14 vs 16.
-2. **Клікни на ціль**: косинус одного патча до всіх патчів кадрів з інших відео (ipyevents).
-3. **«200 кадрів проти 2000»**: kNN і linear probe на кропах об'єктів VisDrone; випадковий vs кластерний добір міток; точність за розміром цілі.
-4. **Архів як актив**: t-SNE-карта сцен, найсхожіші сцени з різних відео, витік даних при розбитті за кадром / послідовністю / відео.
+**Блок 2:** Foundation Models та Advanced Generative AI
 
-```
-demo1_dino.ipynb             ноутбук демо
-dino_features.py             моделі (transformers), щільні фічі, панелі, кропи, kNN / probe, k-means-добір, витік
-tools/fetch_dino_models.py   (у корені) ваги -> artifacts/models/dino/ + manifest.json (SHA-256)
-```
+## План
+Лекція — 55 слайдів, три live-демо (слайди 32, 40, 44).
+
+- Мотивація: де ламається YOLO — закритий словник, локальність, дрібні цілі
+- Від згорток до уваги: одна формула агрегації, Q/K/V, multi-head
+- Vision Transformer: токени, позиції, роздільність, O(N²), Swin, розрахунок пікселів на цілі
+- Навчання без міток: DINOv2 / DINOv3, робочий рецепт «архів → 200 міток → kNN», PEFT / LoRA
+- Мультимодальні моделі: CLIP і SigLIP, межі zero-shot, ІЧ-домен, метрики, векторний пошук
+- Застосування в DefTech: людина в контурі, три зони впевненості, вузький канал і split-computing
+
+## Демо
+
+| Файл | Слайд | Про що | Дані |
+|---|---|---|---|
+| [demo1](lesson05_demo1_dino.ipynb) | LIVE DEMO 1 (32) | DINOv2 / DINOv3 без міток: PCA патч-фіч, регістри, увага [CLS], пошук кліком по патчу, скільки міток потрібно, витік train / test | VisDrone-VID train, val, test-dev |
+| [demo2](lesson05_demo2_clip_basics.ipynb) | LIVE DEMO 2 (40) | CLIP проти SigLIP 2: дві вежі, InfoNCE і сигмоїда, температура, zero-shot з класом «фон», пісочниця, батарея відмов, zero-shot проти DINOv2 | VisDrone-VID, пара RGB / LWIR з `artifacts/images` |
+| [demo3](lesson05_demo3_video_search.ipynb) | LIVE DEMO 3 (44) | Пошук по відеоархіву: ключові кадри й тайли, FAISS, текстовий пошук і пошук за зразком з текстом, метрики, три зони, PQ для вузького каналу | VisDrone-VID або власне відео |
+
+Увесь спільний код — у [`panels.py`](panels.py): дані VisDrone, моделі DINO і CLIP-сімейства, кеші, метрики, графіки й
+віджети. Формули зі слайдів (косинус, InfoNCE, сигмоїдна втрата, softmax / sigmoid, злиття оцінок) рахуються в клітинках ноутбуків.
 
 ```bash
 # з кореня репозиторію
-pip install -r lessons/05-dino-clip/requirements.txt
-python tools/fetch_dino_models.py                       # dinov2, dinov2reg, dinov3 · base;  --size small для CPU
-python tools/fetch_visdrone.py --splits train val test-dev   # блокам 3–4 потрібен train (7.5 ГБ)
-jupyter lab lessons/05-dino-clip/demo1_dino.ipynb
+./scripts/setup.sh                                          # середовище cv-advanced; пакети — у кореневому requirements.txt
+python tools/fetch_visdrone.py --splits train val test-dev  # VisDrone-VID -> artifacts/visdrone/ (~11 ГБ)
+python tools/fetch_dino_models.py                           # demo1, demo2: DINOv2, DINOv2-reg, DINOv3 (base) і DINOv3-sat (large) -> artifacts/models/dino/
+python tools/fetch_clip_models.py                           # demo2, demo3: CLIP, SigLIP 2, RemoteCLIP, SkyCLIP -> artifacts/models/clip/
 ```
-- **Пристрій:** у першій клітинці `DEVICE = "cuda" | "cpu" | None` (авто). Без CUDA ноутбук попереджає і йде на CPU.
-  На CPU за замовчуванням беруться `small`-моделі, менший кадр (672 px) і менше кропів.
+- **Офлайн.** Скрипти `fetch_*` пишуть `manifest.json` із SHA-256 файлів; ноутбук бачить, що всі потрібні ваги на місці,
+  і сам вмикає `HF_HUB_OFFLINE=1` (`panels.setup_hf`). Після завантаження інтернет не потрібен — для того розміру моделей,
+  який завантажено: `small`-DINO для CPU — `fetch_dino_models.py --models dinov2 dinov2reg dinov3 --size small`,
+  `large` для самостійних завдань — `--size large` в обох `fetch_*_models.py` (у CLIP-моделей `small` немає).
 - **DINOv3 — gated** (DINOv3 License, не Apache 2.0): прийміть умови на
-  [сторінці моделі](https://huggingface.co/facebook/dinov3-vitb16-pretrain-lvd1689m), дочекайтесь підтвердження, `hf auth login`,
-  потім `python tools/fetch_dino_models.py --models dinov3`. Без доступу ноутбук пропускає DINOv3 з підказкою.
-- Кеш кропів і ембедінгів — `outputs/demo1/`. Smoke без мережі: `DEMO1_SMOKE=1 jupyter nbconvert --to notebook --execute demo1_dino.ipynb --output smoke1.ipynb`.
+  [сторінці моделі](https://huggingface.co/facebook/dinov3-vitb16-pretrain-lvd1689m), `hf auth login`,
+  потім `python tools/fetch_dino_models.py --models dinov3 dinov3sat`. Без доступу ноутбуки пропускають DINOv3 з підказкою,
+  а `fetch_dino_models.py` завантажує решту й завершується з кодом 1.
+- **Пристрій.** `DEVICE = None` у першій клітинці — cuda / mps / cpu автоматично. demo1 на CPU бере `small`-моделі й менший кадр (`python tools/fetch_dino_models.py --models dinov2 dinov2reg dinov3 --size small`).
+- **Кеш.** Кропи, ембеддинги й ключові кадри — в `outputs/demo1..3/` (у git не потрапляє). Перший прогін demo3 рахує
+  ембеддинги ~21 тис. тайлів (~3 тис. ключових кадрів × 7, кілька хвилин на GPU), далі все береться з кешу.
+- **Smoke-тест без мережі** (синтетичні кадри, випадкові ваги — лише перевірка, що все запускається):
+  `DEMO1_SMOKE=1 jupyter nbconvert --to notebook --execute lesson05_demo1_dino.ipynb --output-dir outputs --output smoke1.ipynb`,
+  так само `DEMO3_SMOKE=1` для demo3.
+  Для повного прогону через `nbconvert` додайте `PANELS_AUTORUN=0`: панелі не малюватимуть перший результат самі.
+  Інакше nbclient (він імітує віджет Output) на великих картинках зависає до тайм-ауту клітинки; у JupyterLab і VS Code проблеми немає.
+- **Інтерактив** — ipywidgets; клік і рамка мишею по кадру — ipyevents (обидва в `requirements.txt`).
 
----
+## Слайди → демо
 
-# Демо 2 · Текстовий пошук по аеровідео (Заняття 5)
-
-SigLIP 2 vs RemoteCLIP vs SkyCLIP на тих самих ключових кадрах: FAISS-індекс, авто-GT,
-метрики пошуку (EventRecall@k, P@k, AP), тайли проти цілого кадру, промпти з ракурсом,
-пороги по сирому cos і PQ-коди для вузького каналу.
-
-## Структура
-```
-demo2_text_search.ipynb      ноутбук демо
-aerial_search.py             конвеєр: кадри, тайли, моделі, FAISS, GT, метрики, PQ, візуалізація
-gt/own_queries_template.csv  формат GT для власного польоту
-
-tools/fetch_clip_models.py   (у корені) ваги трьох моделей -> artifacts/models/clip/ + manifest.json (SHA-256)
-tools/fetch_visdrone.py      (у корені) VisDrone-VID -> artifacts/visdrone/; підказки для UAVDT / AU-AIR / власного відео
-```
-Кеш ключових кадрів і ембеддингів ноутбук пише в `outputs/demo2/` (у git не потрапляє).
-
-## Запуск
-```bash
-# з кореня репозиторію
-pip install -r lessons/05-dino-clip/requirements.txt
-python tools/fetch_clip_models.py                 # --size large для L-моделей
-python tools/fetch_visdrone.py                    # --splits val, щоб узяти лише 1.5 ГБ
-jupyter lab lessons/05-dino-clip/demo2_text_search.ipynb
-```
-Smoke-тест без мережі (синтетичні кадри, випадкові ваги — лише перевірка, що все запускається):
-```bash
-DEMO2_SMOKE=1 jupyter nbconvert --to notebook --execute demo2_text_search.ipynb --output smoke.ipynb
-```
+| Слайди | Демо |
+|---|---|
+| 15 «ViT», 17 «Нова роздільність», 19 «O(N²)» | demo1, розділ 1 |
+| 22 «Розрахунок, який треба зробити до вибору архітектури» | demo1, розділи 1–3; demo2, розділ 4; demo3, розділи 1, 3 |
+| 23 «Архітектурні стратегії для високої роздільності» | demo3, розділи 1, 6 |
+| 25–28 «Дані в обороні», «DINO: самодистиляція без міток», «DINOv2», «DINOv3» | demo1, розділи 1, 2, 4; demo2, розділ 4 (25) |
+| 29 «Робочий рецепт: від сирого архіву до працюючої моделі» | demo1, розділ 3; demo2, розділ 8 |
+| 34–36 «Спільний простір», «Контрастивна функція втрат», «CLIP: Zero-Shot Classification» | demo2, розділи 1–4; demo3, розділ 5 (34) |
+| 37–39 «Де CLIP помиляється», «Доменний розрив ракурсу», «Тепловізор» | demo2, розділи 4–7; demo3, розділ 6 (38) |
+| 41–43 «CLIP-based Image Search: Text-to-Image», «Image+Text-to-Image», «FAISS» | demo3, розділи 3–5 |
+| 46 «Як міряти мультимодальну систему» | demo1, розділи 3–4; demo2, розділи 4, 7; demo3, розділи 2, 6 |
+| 48–49 «Human-in-the-loop», «Три зони впевненості» | demo1, розділ 4 (48); demo2, розділи 2, 6; demo3, розділ 7 |
+| 50–51 «Вузький канал: передавайте вектори, а не відео», «Split-computing в умовах РЕБ» | demo2, розділ 1 і підсумок; demo3, розділи 1, 8 |
 
 ## Звідки ваги
+
 | Модель | Джерело | Як вантажиться |
 |---|---|---|
-| SigLIP 2 | HF `timm/ViT-B-16-SigLIP2` через open_clip (`pretrained="webli"`) | open_clip |
+| DINOv2, DINOv2-reg, DINOv3 | HF `facebook/dinov2-*`, `facebook/dinov3-*` | transformers, кеш `artifacts/models/dino/hf_home/hub` |
+| CLIP | OpenAI, `ViT-B-16` / `ViT-L-14`, `pretrained="openai"` | open_clip з `force_quick_gelu=True`: без нього open_clip 3.x ставить GELU лише з `UserWarning`, і модель гіршає |
+| SigLIP 2 | HF `timm/ViT-B-16-SigLIP2`, `pretrained="webli"` | open_clip |
 | RemoteCLIP | HF `chendelong/RemoteCLIP`, `RemoteCLIP-ViT-B-32.pt` | open_clip + `load_state_dict`, як у README авторів |
-| SkyCLIP | S3 авторів SkyScript, `SkyCLIP_ViT_B32_top50pct.zip` | open_clip; для ViT-L-14 — `quick_gelu=True`, як у їхньому ноутбуці |
+| SkyCLIP | S3 авторів SkyScript, `SkyCLIP_ViT_B32_top50pct.zip` | open_clip; для ViT-L-14 — `quick_gelu=True` |
 
-`.pt` — це pickle. За замовчуванням ваги вантажаться з `weights_only=True`; якщо файл містить щось,
-крім тензорів, код зупиниться й попросить явно `--trust-pickle`. Офлайн: `HF_HOME=artifacts/models/clip/hf_home HF_HUB_OFFLINE=1`. `--to-safetensors` збереже
-перевірену копію в safetensors.
+`.pt` — це pickle. Ваги вантажаться з `weights_only=True`; якщо файл містить щось, крім тензорів, код зупиниться й попросить
+явно `--trust-pickle`. `python tools/fetch_clip_models.py --to-safetensors` збереже перевірену копію в safetensors.
 
 ## Дані
-- **VisDrone-VID val + test-dev** (~3.6 ГБ): покадрова розмітка → авто-GT для запитів `truck`, `bus`,
-  `tricycle`, `van`, `bicycle`, `motorcycle`, `person`, `car`. Це хвилини відео, а не година:
-  для кількісного порівняння моделей цього достатньо, для «години польоту» — власне відео.
-- **Власне відео**: `artifacts/aerial_video/*.mp4` + `gt/own_queries.csv`, у ноутбуці `DATASET = "own"`, `SAMPLE_FPS = 1.0`.
+- **VisDrone-VID** (train 7.5 ГБ, val + test-dev ~3.6 ГБ): покадрова розмітка дає кропи для класифікації (demo1, demo2)
+  і авто-GT для запитів `truck`, `bus`, `van`, `tricycle`, `bicycle`, `motorcycle`, `person`, `car` (demo3).
+  Це хвилини відео, а не година: для порівняння моделей цього досить, для «години польоту» — власне відео.
+- **Власне відео** для demo3: `artifacts/aerial_video/*.mp4` + `gt/own_queries.csv` (формат —
+  [`gt/own_queries_template.csv`](gt/own_queries_template.csv)), у ноутбуці `DATASET = "own"`, `SAMPLE_FPS = 1.0`.
+- **Пара RGB / LWIR** з заняття 1 (`artifacts/images/lesson_1_demo_1_*.jpg`) — ілюстративна, для тестів напису й полярності в demo2.
 - Ліцензії VisDrone / UAVDT / AU-AIR — академічні; перевірте умови для платного курсу.
 
-## Що перевірено
-Smoke-прогін усього ноутбука (синтетика + випадкові ваги): конвеєр, кеші, FAISS, метрики, PQ, графіки.
-Завантаження реальних ваг і VisDrone в середовищі збірки перевірити не було як (мережа обмежена) —
-перший повний прогін зробіть до заняття.
+## Джерела
+- A. Dosovitskiy et al. [An Image is Worth 16×16 Words](https://arxiv.org/abs/2010.11929), ICLR 2021.
+- M. Oquab et al. [DINOv2](https://arxiv.org/abs/2304.07193), TMLR 2024; T. Darcet et al.
+  [Vision Transformers Need Registers](https://arxiv.org/abs/2309.16588), ICLR 2024; O. Siméoni et al. [DINOv3](https://arxiv.org/abs/2508.10104), 2025.
+- A. Radford et al. [CLIP](https://arxiv.org/abs/2103.00020), ICML 2021; X. Zhai et al. [SigLIP](https://arxiv.org/abs/2303.15343), ICCV 2023;
+  M. Tschannen et al. [SigLIP 2](https://arxiv.org/abs/2502.14786), 2025.
+- F. Liu et al. [RemoteCLIP](https://arxiv.org/abs/2306.11029), IEEE TGRS 2024; Z. Wang et al. [SkyScript](https://arxiv.org/abs/2312.12856), AAAI 2024.
+- J. Johnson, M. Douze, H. Jégou. [Billion-scale similarity search with GPUs (FAISS)](https://arxiv.org/abs/1702.08734), 2017.
+- P. Zhu et al. [VisDrone](https://github.com/VisDrone/VisDrone-Dataset), IEEE TPAMI 2021.
