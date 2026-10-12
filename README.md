@@ -129,7 +129,9 @@ pip install -r requirements.txt
 У цьому разі збірку torch під свою відеокарту обираєш сам: на Windows `pip` з PyPI
 ставить лише CPU-збірку. Команду для своєї CUDA бери з
 [pytorch.org/get-started](https://pytorch.org/get-started/locally/) і виконуй **до**
-`pip install -r requirements.txt`.
+`pip install -r requirements.txt`. Перед нею задай `SAM2_BUILD_CUDA=0` (Windows:
+`$env:SAM2_BUILD_CUDA = "0"`): інакше SAM 2 для заняття 6 намагається скомпілювати
+необов'язкове CUDA-розширення і без `nvcc` падає. `scripts/setup.*` роблять це самі.
 
 Пакети окремих занять (наприклад, `open3d`, `scipy`, `kiss-icp` для заняття 3) теж у
 кореневому `requirements.txt`, згруповані за заняттями, і ставляться тією самою командою.

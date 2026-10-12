@@ -2,8 +2,8 @@
 """
 Open-vocabulary детектори й VLM для заняття 6 (демо 2 і 3) — в artifacts/models/ov/ і artifacts/models/ultralytics/.
 
-    python tools/fetch_ov_models.py                                  # GDINO-T/B, MM-GDINO-T, OWLv2, Florence-2, YOLOE, YOLO-World, YOLO11
-    python tools/fetch_ov_models.py --models gdino-base owlv2 yoloe  # мінімум для демо 2
+    python tools/fetch_ov_models.py                                  # GDINO-T/B, OWLv2, Florence-2, YOLOE, YOLO-World, YOLO11
+    python tools/fetch_ov_models.py --models gdino-base yolo11       # мінімум для демо 3; демо 2 бере весь набір за замовчуванням
     python tools/fetch_ov_models.py --models qwen2.5-vl              # опційно: VLM-grounding, ≈ 7.5 ГБ
 
 Ultralytics-моделі тягнуть ще й текстовий енкодер: YOLOE — MobileCLIP (mobileclip_blt.ts, ≈ 570 МБ),

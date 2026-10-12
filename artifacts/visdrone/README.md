@@ -5,7 +5,7 @@
 ```
 python tools/fetch_visdrone.py --splits train val test-dev  # усе для ноутбуків заняття 5, ≈ 11 ГБ
 python tools/fetch_visdrone.py                              # VID val + test-dev, ≈ 3,6 ГБ
-python tools/fetch_visdrone.py --splits val                 # лише VID val, ≈ 1,5 ГБ (заняття 6, демо 2–3)
+python tools/fetch_visdrone.py --splits val                 # лише VID val, ≈ 1,5 ГБ (заняття 6, демо 3)
 python tools/fetch_visdrone.py --dataset visdrone-det       # DET val, 548 кадрів, ≈ 80 МБ (заняття 6, демо 1–2)
 ```
 

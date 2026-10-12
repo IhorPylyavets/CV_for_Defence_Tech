@@ -32,7 +32,7 @@ python tools/fetch_visdrone.py --dataset visdrone-det    # demo1, demo2: VisDron
 python tools/fetch_visdrone.py --splits val              # demo3: VisDrone2019-VID-val (~1.5 ГБ; є, якщо вже робили заняття 5)
 python tools/fetch_sam_models.py                         # demo1, demo3: SAM, HQ-SAM, SAM 2.1 T/S/B+/L, MobileSAM, FastSAM (~4.7 ГБ)
 python tools/fetch_ov_models.py                          # demo2, demo3: GDINO-T/B, OWLv2, Florence-2, YOLOE, YOLO-World, YOLO11 (~4.8 ГБ)
-python tools/fetch_ov_models.py --models qwen2.5-vl      # опційно, demo2 розділ 8 (~7.2 ГБ)
+python tools/fetch_ov_models.py --models qwen2.5-vl      # опційно, demo2 розділ 8 (~7.5 ГБ)
 python tools/fetch_sam_models.py --models sam3           # опційно, gated — demo3 розділ 9 (~3.3 ГБ)
 ```
 - **Офлайн.** Скрипти `fetch_*` пишуть `manifest.json` із SHA-256 файлів в `artifacts/models/{sam,ov}/`; ноутбук бачить,
@@ -46,7 +46,7 @@ python tools/fetch_sam_models.py --models sam3           # опційно, gated
   бере `sam2.1-tiny`; demo2 і demo3 на CPU працюють, але хвилинами на розділ.
 - **Кеш.** Кадри кліпу, експорт ДЗ і всі картинки / таблиці для слайдів — в `outputs/demo1..3/` (у git не потрапляє).
   Бенчмарк demo2 (~10 хв на GPU) зберігається в `outputs/demo2/02_ov_bench.csv`, і повторний запуск з `RECOMPUTE = False`
-  бере його. На лекції або показуйте збережений, або ставте `N_IMG = 30`, `PER_SEQ = 3`.
+  бере його. На лекції або показуйте збережений, або ставте `N_IMG = 30`.
 - **Прогін без браузера:** `PANELS_AUTORUN=0 jupyter nbconvert --to notebook --execute lesson06_demo1_sam.ipynb --output run1.ipynb`.
   `PANELS_AUTORUN=0` вимикає перший автоматичний рендер віджета кліку в demo1, як і в заняття 5.
 - **Інтерактив** — ipywidgets; клік мишею по кадру в demo1 — ipyevents (обидва в `requirements.txt`).
@@ -74,7 +74,7 @@ python tools/fetch_sam_models.py --models sam3           # опційно, gated
 | 42 «VLM, яка пише бокси текстом» | demo2, розділ 8 |
 | 45–46 «Розрахунок до вибору моделі», «Дрібні об'єкти на великому кадрі» | demo2, розділи 4–5; demo3, розділи 1–2 |
 | 47 «Не-RGB спектр» | demo3, розділ 8 |
-| 49–50 «Домен-шифт і чесна оцінка», «Як чесно виміряти» | demo2, розділи 5–6 (`02_ov_bench.csv`); demo3, розділи 3, 7 |
+| 49–50 «Домен-шифт і чесна оцінка», «Як чесно виміряти» | demo2, розділи 5–6 (`02_ov_bench.csv`); demo3, розділи 1, 7 |
 | 51 «Каталог провалів» | demo1, розділ 5; demo2, розділи 5, 7; demo3, розділи 2–4, 8 |
 | 52–53 «Grounded-SAM: класична композиція», «Композиція в 15 рядках і її latency-бюджет» | demo3, розділи 1–2, 5–6 |
 | 57–58 «Правильне місце zero-shot», «Робочий рецепт» | demo3, розділ 7 |
@@ -102,8 +102,8 @@ python tools/fetch_sam_models.py --models sam3           # опційно, gated
   паперовими 48.4 AP саме `grounding-dino-tiny` (O365, GoldG, Cap4M).
 - **MM-Grounding DINO** (наступник зі слайду 38) у transformers 5.19 повертає вироджені бокси нульової ширини, хоча всі ваги
   завантажуються без розбіжностей, — тому його немає в реєстрі.
-- Без CUDA-розширення `sam2._C` SAM 2 лише пропускає заповнення дрібних дірок у масках; `scripts/setup.*` ставлять
-  `SAM2_BUILD_CUDA=0`, і попередження про `_C` у ноутбуках приглушене.
+- Без CUDA-розширення `sam2._C` SAM 2 лише пропускає заповнення дрібних дірок у масках; `scripts/setup.py` (його викликають
+  `setup.sh` і `setup.ps1`) ставить `SAM2_BUILD_CUDA=0`, і попередження про `_C` у ноутбуках приглушене.
 
 ## Дані
 - **VisDrone2019-DET-val** — 548 кадрів, 38 759 об'єктів, здебільшого 1360 × 765; для замірів на зображеннях (demo1, demo2).

@@ -672,7 +672,7 @@ def phrase_to_class(phrase: str, classes: Sequence[str]) -> int:
 
 
 class GDino:
-    """Grounding DINO / MM-Grounding DINO через transformers. Будь-яка зміна тексту — повний прохід (слайди 37–38)."""
+    """Grounding DINO через transformers. Будь-яка зміна тексту — повний прохід (слайди 37–38)."""
 
     def __init__(self, name: str = "gdino-base", device: str = "cuda"):
         self.name, self.device = name, device
@@ -1303,7 +1303,7 @@ class ConstVelKF:
 # demo3 · кодування маски для каналу (слайд 60)
 # ======================================================================================
 def rle_encode(m: np.ndarray) -> List[int]:
-    """Довжини серій 0/1 по рядках (як COCO RLE без стиснення рядком): перша серія — нулі."""
+    """Довжини серій 0/1 по рядках (row-major; COCO RLE — по стовпцях, тож це не COCO-формат): перша серія — нулі."""
     f = np.asarray(m, bool).ravel()
     idx = np.flatnonzero(np.diff(np.r_[False, f, False].astype(np.int8)))
     runs = np.diff(np.r_[0, idx, f.size])

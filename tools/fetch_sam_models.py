@@ -3,7 +3,7 @@
 Ваги сімейства SAM для заняття 6 (демо 1 і 3) — в artifacts/models/sam/ (+ MobileSAM і FastSAM в artifacts/models/ultralytics/).
 
     python tools/fetch_sam_models.py                                   # SAM ViT-B/H, HQ-SAM, SAM 2.1 T/S/B+/L, MobileSAM, FastSAM
-    python tools/fetch_sam_models.py --models sam2.1-small sam2.1-large  # мінімум для демо 1 і 3 (≈ 1 ГБ)
+    python tools/fetch_sam_models.py --models sam2.1-small             # мінімум для демо 3; демо 1 бере весь набір
     python tools/fetch_sam_models.py --models sam3                     # gated, SAM License
 
 SAM 3 на Hugging Face — gated (SAM License, не Apache 2.0): прийміть умови на https://huggingface.co/facebook/sam3,

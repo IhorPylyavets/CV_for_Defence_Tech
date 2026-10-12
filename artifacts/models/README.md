@@ -10,5 +10,5 @@
 | `ov/` | Grounding DINO T / B, OWLv2, Florence-2, Qwen2.5-VL (заняття 6) | `python tools/fetch_ov_models.py` |
 | `ultralytics/` | YOLOE, YOLO-World, YOLO11, MobileSAM, FastSAM і текстові енкодери MobileCLIP / CLIP (заняття 6) | ті самі скрипти |
 
-У кожній теці з `fetch_*` лежить `manifest.json` зі шляхами й SHA-256 файлів: ноутбуки за ним вирішують,
+У `dino/`, `clip/`, `sam/` і `ov/` лежить `manifest.json` (ваги з `ultralytics/` записані в маніфести `sam/` і `ov/`) зі шляхами й SHA-256 файлів: ноутбуки за ним вирішують,
 що можна працювати офлайн (`HF_HUB_OFFLINE=1`), а в закритому контурі за ним перевіряють, що ваги не підмінено.
