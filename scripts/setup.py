@@ -222,7 +222,9 @@ def main() -> None:
         run(pip + ["uninstall", "-y", "torch", "torchvision"])
     run(pip + ["install", "torch", "torchvision"] + torch_args)
 
-    # решта requirements ставиться після torch: він уже задоволений і не перевстановиться
+    # решта requirements ставиться після torch: він уже задоволений і не перевстановиться.
+    # SAM 2 (заняття 6) без SAM2_BUILD_CUDA=0 компілює CUDA-розширення і падає без nvcc; воно не обов'язкове.
+    os.environ.setdefault("SAM2_BUILD_CUDA", "0")
     run(pip + ["install", "-r", str(REQUIREMENTS)])
 
     if not args.no_kernel:
