@@ -37,3 +37,6 @@ backup
 *.DS_Store
 lessons/04-nerf-3dgs/01-colmap-visualize/data/*
 lessons/04-nerf-3dgs/02-nerf-visualize/viewer/scenes/*
+
+# Архіви для здачі ДЗ (dz6_<прізвище>.zip) — лише для LMS
+homework/**/*.zip

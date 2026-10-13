@@ -15,7 +15,7 @@
 | 3 | [Оцінка руху та основи SLAM](lessons/03-odometry-slam/) | 1 | [✔](homework/01-features-icp/) |
 | 4 | [3D-реконструкція: NeRF та 3D Gaussian Splatting](lessons/04-nerf-3dgs/) | 1 |  |
 | 5 | [Vision Transformers та мультимодальні моделі](lessons/05-vit-multimodal/) | 2 |  |
-| 6 | [Zero-shot сегментація та Open-Vocabulary детекція](lessons/06-zero-shot-segmentation/) | 2 | ✔ |
+| 6 | [Zero-shot сегментація та Open-Vocabulary детекція](lessons/06-zero-shot-segmentation/) | 2 | [✔](homework/02-grounded-sam2-video/) |
 | 7 | Генеративні моделі в CV: принципи | 2 | ✔ |
 | 8 | Адаптація, керування та синтез даних | 2 |  |
 | 9 | Multi-Object Tracking та Re-Identification | 3 | ✔ |
@@ -174,7 +174,7 @@ pip install -r requirements.txt
 
 Заняття 3, 6, 7, 9, 11, 13, 16, 18. Завдання лежать у [`homework/`](homework/), по теці на ДЗ;
 у README кожної — кроки, бали й що здати. Виконаний ноутбук (з виводами) і файли, які просить
-завдання, студенти прикріплюють в особистому кабінеті LMS; комітити в репозиторій не потрібно.
+завдання, студенти пакують в один архів і прикріплюють його в особистому кабінеті LMS; комітити в репозиторій не потрібно.
 Дедлайн — початок наступного заняття.
 
 Якщо README завдання не каже інакше, оцінка така: коректність 40, метрики та чесність
