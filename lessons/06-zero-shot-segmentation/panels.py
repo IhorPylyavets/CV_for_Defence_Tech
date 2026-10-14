@@ -1,9 +1,9 @@
 """
 Заняття 6 · спільний код трьох демо-ноутбуків.
 
-    lesson06_demo1_sam.ipynb                  SAM / SAM 2.1: промпти, неоднозначність, де зникає час   (LIVE DEMO 1, слайд 25)
-    lesson06_demo2_ov_detectors.ipynb         OV-детектори: S = O·Pᵀ, промпт, точність / час, тайлінг (LIVE DEMO 2, слайд 43)
-    lesson06_demo3_grounded_sam2_video.ipynb  Grounded-SAM 2 на відео: пам'ять, оклюзії, ціна, ІЧ   (LIVE DEMO 3, слайд 55)
+    lesson06_demo1_sam.ipynb                  SAM / SAM 2.1: промпти, неоднозначність, де зникає час   (LIVE DEMO 1, слайд 26)
+    lesson06_demo2_ov_detectors.ipynb         OV-детектори: S = O·Pᵀ, промпт, точність / час, VLM     (LIVE DEMO 2, слайд 44)
+    lesson06_demo3_grounded_sam2_video.ipynb  Grounded-SAM 2 на відео: пікселі й тайли, пам'ять, ціна, ІЧ (LIVE DEMO 3, слайд 56)
 
 Конвенція курсу: формули, які пояснюються на слайдах (кількість токенів, S = O·Pᵀ, T(k) = T_enc + k·T_dec,
 формула тайлів, T_frame, байти на об'єкт), рахуються в клітинках ноутбуків; тут — дані, моделі, кеші, метрики,
@@ -59,7 +59,7 @@ AUTORUN = os.environ.get("PANELS_AUTORUN", "1") != "0"
 # ======================================================================================
 # Реєстр моделей. Ключ — те, що пишемо в ноутбуці й у --models скриптів завантаження.
 # ======================================================================================
-# kind: "sam2" — офіційний пакет sam2 (API зі слайдів 22 і 53); "hf-*" — transformers; "ultra" — ultralytics.
+# kind: "sam2" — офіційний пакет sam2 (API зі слайдів 23 і 54); "hf-*" — transformers; "ultra" — ultralytics.
 SAM_ZOO: Dict[str, dict] = {
     "sam-vit-base":   dict(kind="hf-sam", repo="facebook/sam-vit-base", label="SAM ViT-B"),
     "sam-vit-huge":   dict(kind="hf-sam", repo="facebook/sam-vit-huge", label="SAM ViT-H"),
@@ -89,7 +89,7 @@ OV_ZOO: Dict[str, dict] = {
 }
 OV_DEFAULT = ["gdino-tiny", "gdino-base", "owlv2", "florence2", "yoloe", "yoloworld", "yolo11"]
 
-# Роздільність, до якої модель зводить кадр (для розрахунку «пікселів на цілі», слайд 45)
+# Роздільність, до якої модель зводить кадр (для розрахунку «пікселів на цілі», слайд 46)
 INPUT_RES = {
     "SAM / SAM 2 (довша сторона → 1024)": ("long", 1024),
     "Grounding DINO (довша ≤ 1333, коротша 800)": ("gdino", (800, 1333)),
@@ -171,6 +171,15 @@ def free_memory():
         torch.cuda.empty_cache()
 
 
+def cuda_free_gb(device: str) -> float:
+    """Вільна пам'ять GPU, ГБ (з урахуванням інших процесів, як у nvidia-smi); на CPU / MPS — нескінченність."""
+    import torch
+
+    if not str(device).startswith("cuda") or not torch.cuda.is_available():
+        return float("inf")
+    return torch.cuda.mem_get_info(torch.device(device))[0] / 2**30
+
+
 def _sha256(path: Path, chunk: int = 1 << 20) -> str:
     h = hashlib.sha256()
     with open(path, "rb") as f:
@@ -200,7 +209,7 @@ def timed(store: Optional[list] = None):
 
 
 def bench(fn: Callable, n_warmup: int = 3, n_iter: int = 10) -> dict:
-    """Медіана / p90 / максимум у мс. На борту важить найгірший випадок, а не середнє (слайд 59)."""
+    """Медіана / p90 / максимум у мс. На борту важить найгірший випадок, а не середнє (слайд 60)."""
     for _ in range(n_warmup):
         fn()
     ts: list = []
@@ -254,7 +263,7 @@ def load_sam2_image(name: str = "sam2.1-large", device: str = "cuda"):
 
 
 def load_sam2_video(name: str = "sam2.1-small", device: str = "cuda"):
-    """SAM2VideoPredictor: пам'ять, голова оклюзії, поширення по відео (слайди 28–29)."""
+    """SAM2VideoPredictor: пам'ять, голова оклюзії, поширення по відео (слайди 29–30)."""
     from sam2.build_sam import build_sam2_video_predictor
 
     _need(name, SAM_DIR, "fetch_sam_models.py")
@@ -307,7 +316,7 @@ def ultra_home():
 
 
 def load_ultra(name: str, classes: Optional[Sequence[str]] = None):
-    """YOLOE / YOLO-World / YOLO11 / MobileSAM / FastSAM. Для OV-моделей classes «запікаються» одразу (слайд 41)."""
+    """YOLOE / YOLO-World / YOLO11 / MobileSAM / FastSAM. Для OV-моделей classes «запікаються» одразу (слайд 42)."""
     from ultralytics import SAM, YOLO, YOLOE, FastSAM, YOLOWorld
 
     spec = SAM_ZOO.get(name) or OV_ZOO[name]
@@ -331,7 +340,7 @@ def load_ultra(name: str, classes: Optional[Sequence[str]] = None):
 
 
 def set_ultra_classes(model, classes: Sequence[str]):
-    """Нова «таблиця класів» для YOLOE / YOLO-World: текстовий енкодер працює лише тут, на землі (слайд 41)."""
+    """Нова «таблиця класів» для YOLOE / YOLO-World: текстовий енкодер працює лише тут, на землі (слайд 42)."""
     from ultralytics import YOLOE
 
     with ultra_home():
@@ -572,7 +581,7 @@ def mask_to_box(m: np.ndarray) -> Optional[np.ndarray]:
 
 
 def tile_origins(W: int, H: int, t: int = 640, o: float = 0.2) -> List[Tuple[int, int]]:
-    """Лівий верхній кут кожного тайла; кількість — за формулою слайду 46, тайли рівномірно до краю кадру."""
+    """Лівий верхній кут кожного тайла; кількість — за формулою слайду 47, тайли рівномірно до краю кадру."""
     step = t * (1 - o)
     nx = 1 if W <= t else math.ceil((W - t) / step) + 1
     ny = 1 if H <= t else math.ceil((H - t) / step) + 1
@@ -672,7 +681,7 @@ def phrase_to_class(phrase: str, classes: Sequence[str]) -> int:
 
 
 class GDino:
-    """Grounding DINO через transformers. Будь-яка зміна тексту — повний прохід (слайди 37–38)."""
+    """Grounding DINO через transformers. Будь-яка зміна тексту — повний прохід (слайди 38–39)."""
 
     def __init__(self, name: str = "gdino-base", device: str = "cuda"):
         self.name, self.device = name, device
@@ -701,8 +710,8 @@ class GDino:
 class Owl:
     """
     OWLv2 через transformers. Ознаки кадру рахуються один раз і кешуються, текст «зустрічається» з ними лише
-    в кінці — тому новий запит майже нічого не коштує (гілка «aligned», слайд 35).
-    ПАСТКА (слайд 36): кадр доповнюється до квадрата справа / знизу, тож координати — у квадраті S × S, S = max(H, W).
+    в кінці — тому новий запит майже нічого не коштує (гілка «aligned», слайд 36).
+    ПАСТКА (слайд 37): кадр доповнюється до квадрата справа / знизу, тож координати — у квадраті S × S, S = max(H, W).
     """
 
     def __init__(self, name: str = "owlv2", device: str = "cuda"):
@@ -787,7 +796,7 @@ class Owl:
 
     def exemplar_embeds(self, img: np.ndarray, boxes: np.ndarray, iou: float = 0.4) -> np.ndarray:
         """
-        Запит зразком (слайд 36): ембеддинг регіону-зразка замість тексту. Беремо патч-токени, чиї бокси лягають на
+        Запит зразком (слайд 37): ембеддинг регіону-зразка замість тексту. Беремо патч-токени, чиї бокси лягають на
         бокс зразка (IoU ≥ iou), і усереднюємо їх ембеддинги. Рядки результату — нові рядки матриці P.
         """
         O, _ = self.patch_embeds(img)
@@ -833,7 +842,7 @@ def ultra_visual_prompt(model, img: np.ndarray, ref_img: np.ndarray, ref_boxes: 
 
 
 # ======================================================================================
-# VLM-grounding (слайд 42): бокси як текст
+# VLM-grounding (слайд 43): бокси як текст
 # ======================================================================================
 def florence_generate(proc, model, img: np.ndarray, task: str = "<CAPTION_TO_PHRASE_GROUNDING>", text: str = "",
                       device: str = "cuda") -> str:
@@ -865,14 +874,15 @@ def qwen_ground(proc, model, img: np.ndarray, prompt: str, device: str = "cuda",
                 max_pixels: Optional[int] = 1280 * 28 * 28):
     """
     Qwen2.5-VL: детекція як генерація JSON. Повертає (сирий текст, бокси xyxy у пікселях ВХОДУ моделі, (W', H') входу).
-    ПАСТКА (слайд 42): Qwen2.5-VL рахує координати в кадрі після власного ресайзу (кратно 28 px), а не в оригіналі.
+    ПАСТКА (слайд 43): Qwen2.5-VL рахує координати в кадрі після власного ресайзу (кратно 28 px), а не в оригіналі.
     max_pixels = 1280·28² — типове обмеження з model card заради швидкості й пам'яті; None — майже без ресайзу.
     """
     import torch
 
     msgs = [{"role": "user", "content": [{"type": "image"}, {"type": "text", "text": prompt}]}]
     text = proc.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
-    kw = {"max_pixels": max_pixels} if max_pixels else {}
+    # size у пікселях-площах: shortest_edge = min_pixels, longest_edge = max_pixels (прямий max_pixels — deprecated)
+    kw = {"size": {"shortest_edge": proc.image_processor.size["shortest_edge"], "longest_edge": max_pixels}} if max_pixels else {}
     inp = proc(text=[text], images=[Image.fromarray(img)], return_tensors="pt", **kw).to(device)
     with torch.inference_mode():
         ids = model.generate(**inp, max_new_tokens=max_new_tokens, do_sample=False)
@@ -934,7 +944,7 @@ def coco_eval(items, preds: Dict[str, Dets], class_names: Sequence[str], groups:
 
 
 def match_pr(det_boxes: np.ndarray, gt_boxes: np.ndarray, ignore: Optional[np.ndarray] = None, iou: float = 0.5) -> dict:
-    """Precision / recall у робочій точці (слайд 50): жадібне зіставлення за IoU; детекції в ignored regions не рахуються."""
+    """Precision / recall у робочій точці (слайд 51): жадібне зіставлення за IoU; детекції в ignored regions не рахуються."""
     det_boxes = np.asarray(det_boxes, np.float32).reshape(-1, 4)
     if ignore is not None and len(ignore) and len(det_boxes):
         ctr = np.stack([(det_boxes[:, 0] + det_boxes[:, 2]) / 2, (det_boxes[:, 1] + det_boxes[:, 3]) / 2], 1)
@@ -1061,7 +1071,7 @@ def _jpeg(img: np.ndarray, quality: int = 85) -> bytes:
 
 
 # ======================================================================================
-# demo1 · клік мишею → маски SAM (інтерактивний режим, слайд 21)
+# demo1 · клік мишею → маски SAM (інтерактивний режим, слайд 22)
 # ======================================================================================
 class ClickSamPanel:
     """
@@ -1176,7 +1186,7 @@ def run_sam2_video(vp, clip: Clip, boxes0: np.ndarray, device: str = "cuda",
                    keep_scale: float = 0.25, on_frame: Optional[Callable] = None) -> VideoRun:
     """
     Бокси на кадрі 0 → masklet'и по всьому кліпу. corrections = {кадр: {obj: бокс}} — промпт у середині ролика
-    (слайд 29): SAM 2 бере його як ще один умовний кадр, і все після нього перераховується.
+    (слайд 30): SAM 2 бере його як ще один умовний кадр, і все після нього перераховується.
     on_frame(k, obj_ids, masks_bool_cpu) — для експорту повнороздільних масок без зберігання їх у RAM.
     """
     import torch
@@ -1259,7 +1269,7 @@ def summarize_tracks(per_obj: Dict[str, pd.DataFrame]) -> pd.DataFrame:
 
 
 def flicker(area: np.ndarray) -> float:
-    """Медіана |Δплощі| / площа між сусідніми кадрами, %: «маска дихає» (слайд 27)."""
+    """Медіана |Δплощі| / площа між сусідніми кадрами, %: «маска дихає» (слайд 28)."""
     a = np.asarray(area, float)
     a = np.where(a > 0, a, np.nan)
     d = np.abs(np.diff(a)) / a[:-1]
@@ -1268,7 +1278,7 @@ def flicker(area: np.ndarray) -> float:
 
 class ConstVelKF:
     """
-    Фільтр Калмана зі сталою швидкістю для боксу (cx, cy, w, h) — модель руху в SAMURAI і ByteTrack (слайд 30).
+    Фільтр Калмана зі сталою швидкістю для боксу (cx, cy, w, h) — модель руху в SAMURAI і ByteTrack (слайд 31).
     predict() → де бокс має бути; update(box) — коли спостереження прийняли.
     """
 
@@ -1300,7 +1310,7 @@ class ConstVelKF:
 
 
 # ======================================================================================
-# demo3 · кодування маски для каналу (слайд 60)
+# demo3 · кодування маски для каналу (слайд 61)
 # ======================================================================================
 def rle_encode(m: np.ndarray) -> List[int]:
     """Довжини серій 0/1 по рядках (row-major; COCO RLE — по стовпцях, тож це не COCO-формат): перша серія — нулі."""
@@ -1316,13 +1326,13 @@ def varint_bytes(values: Sequence[int]) -> int:
 
 
 # ======================================================================================
-# demo1 · замір енкодер / декодер по сімейству SAM (слайди 19, 24)
+# demo1 · замір енкодер / декодер по сімейству SAM (слайди 20, 25)
 # ======================================================================================
 def sam_bench_fns(name: str, img: np.ndarray, box: np.ndarray, device: str = "cuda"):
     """
     Для моделі із SAM_ZOO повертає (enc_fn, dec_fn, info, model): enc_fn() — енкодер кадру (раз на кадр),
     dec_fn() — prompt encoder + декодер на один бокс поверх уже порахованого embedding. Інтерфейс у всіх
-    однаковий — різниться лише вартість енкодера (слайд 19).
+    однаковий — різниться лише вартість енкодера (слайд 20).
     """
     import torch
 
