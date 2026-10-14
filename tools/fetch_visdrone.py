@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 """
-VisDrone-VID для заняття 5 (усі три демо) — в artifacts/visdrone/.
+VisDrone для занять 5 (VID, усі три демо) і 6 (VID val, DET val) — в artifacts/visdrone/.
 
     python tools/fetch_visdrone.py --splits train val test-dev  # усе, що потрібно ноутбукам заняття 5, ≈ 11 ГБ
-
-    python tools/fetch_visdrone.py                              # val + test-dev, ≈ 3,6 ГБ
-    python tools/fetch_visdrone.py --splits val                 # лише val, ≈ 1,5 ГБ
+    python tools/fetch_visdrone.py                              # VID val + test-dev, ≈ 3,6 ГБ
+    python tools/fetch_visdrone.py --splits val                 # лише VID val, ≈ 1,5 ГБ (заняття 6, демо 3)
+    python tools/fetch_visdrone.py --dataset visdrone-det       # DET val, 548 кадрів, ≈ 80 МБ (заняття 6, демо 1–2)
     python tools/fetch_visdrone.py --dataset own                # підказка, куди класти власне відео
     python tools/fetch_visdrone.py --dataset info               # UAVDT / AU-AIR: де брати вручну
 
@@ -33,6 +33,9 @@ VISDRONE_VID = {
     "val": ("1H1JTaUTlCbncNDpGl_rQTr8TsJDpmkcx", "1.49 GB"),
     "test-dev": ("15QSZUFRDqceFG6xxe-G0_6cLP9sW9iPQ", "2.14 GB"),
 }
+
+# VisDrone2019-DET-val: дзеркало Ultralytics на GitHub Releases (той самий архів, що й офіційний на Google Drive).
+VISDRONE_DET_VAL_URL = "https://github.com/ultralytics/assets/releases/download/v0.0.0/VisDrone2019-DET-val.zip"
 
 INFO = """
 Інші відкриті аеровідео (завантаження вручну, умови використання — на сторінках проєктів):
@@ -125,9 +128,38 @@ def download_visdrone(splits, out_dir: Path, keep_zip: bool, mirrors: dict):
     print(f"Готово: {out_dir}")
 
 
+def det_ready(out_dir: Path) -> bool:
+    d = out_dir / "VisDrone2019-DET-val"
+    return (d / "images").is_dir() and (d / "annotations").is_dir() and any((d / "images").iterdir())
+
+
+def download_visdrone_det(out_dir: Path, keep_zip: bool):
+    """VisDrone2019-DET-val: 548 кадрів, 38 759 об'єктів. Кадри різних сцен і висот — для замірів на зображеннях."""
+    import urllib.request
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    if det_ready(out_dir):
+        print("[skip] DET-val: вже розпаковано")
+        return
+    zpath = out_dir / "VisDrone2019-DET-val.zip"
+    if not zpath.exists():
+        print(f"[download] {VISDRONE_DET_VAL_URL}")
+        tmp = zpath.with_suffix(".part")
+        urllib.request.urlretrieve(VISDRONE_DET_VAL_URL, tmp)
+        tmp.rename(zpath)
+    print(f"[unzip] {zpath.name}")
+    with zipfile.ZipFile(zpath) as z:
+        z.extractall(out_dir)
+    if not det_ready(out_dir):
+        sys.exit(f"Неочікувана структура архіву {zpath}: чекаю VisDrone2019-DET-val/images і /annotations")
+    if not keep_zip:
+        zpath.unlink()
+    print(f"Готово: {out_dir / 'VisDrone2019-DET-val'}")
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dataset", default="visdrone-vid", choices=["visdrone-vid", "own", "info"])
+    ap.add_argument("--dataset", default="visdrone-vid", choices=["visdrone-vid", "visdrone-det", "own", "info"])
     ap.add_argument("--splits", nargs="+", default=["val", "test-dev"], choices=list(VISDRONE_VID))
     ap.add_argument("--keep-zip", action="store_true", help="не видаляти архів після розпакування")
     ap.add_argument("--mirror", nargs="+", default=[], metavar="SPLIT=LINK",
@@ -138,6 +170,8 @@ def main():
         ap.error(f"--mirror: невідомий спліт {bad}")
     if args.dataset == "visdrone-vid":
         download_visdrone(args.splits, ARTIFACTS / "visdrone", args.keep_zip, mirrors)
+    elif args.dataset == "visdrone-det":
+        download_visdrone_det(ARTIFACTS / "visdrone", args.keep_zip)
     elif args.dataset == "own":
         (ARTIFACTS / "aerial_video").mkdir(parents=True, exist_ok=True)
         print(OWN)

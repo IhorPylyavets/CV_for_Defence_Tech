@@ -4,11 +4,11 @@ torchvision
 opencv-python
 numpy
 matplotlib
-ultralytics>=8.3.100   # з 8.3 — YOLO11
-transformers>=4.56   # з 4.56 з'явився DINOv3 (заняття 5)
+ultralytics>=8.3.100   # з 8.3 — YOLO11, з 8.3.100 — YOLOE (заняття 6)
+transformers>=5.0    # з 4.56 — DINOv3 (заняття 5), з 5.0 — SAM 3 і Florence-2 без trust_remote_code (заняття 6)
 jupyterlab>=4
 ipywidgets>=8      # віджети для JupyterLab 4
-ipyevents>=2       # вибір цілі мишею (заняття 1 demo2, заняття 5 demo1 і demo3); 2.x — під JupyterLab 4
+ipyevents>=2       # вибір цілі мишею (заняття 1 demo2, 5 demo1 і demo3, 6 demo1); 2.x — під JupyterLab 4
 python-pptx
 
 # Заняття 3 · оцінка руху та SLAM
@@ -27,6 +27,13 @@ scikit-learn           # linear probe (demo1, demo2)
 faiss-cpu              # k-means добору міток (demo1), індекс і PQ (demo3)
 pandas
 gdown                  # VisDrone з Google Drive
+
+# Заняття 6 · zero-shot сегментація та OV-детекція
+pycocotools            # AP / AP_small і COCO RLE (demo2, demo3)
+lap>=0.5.12            # ByteTrack в ultralytics (demo3); без нього ultralytics доставляє його сам посеред прогону
+# SAM 2.1; scripts/setup.* ставлять SAM2_BUILD_CUDA=0 — без компіляції CUDA-розширення (воно лише заповнює дірки в масках)
+SAM-2 @ git+https://github.com/facebookresearch/sam2.git
+clip @ git+https://github.com/ultralytics/CLIP.git   # текстовий енкодер для YOLO-World
 
 # Окремими venv, бо конфліктують між собою:
 #   заняття 4, 11       — pycolmap

@@ -1783,6 +1783,8 @@ class PatchSimilarityPanel:
     """
     Клік по кадру-запиту -> косинус фічі цього патча (або окілу 3×3) до всіх патчів запиту й галереї.
     Рядок на модель; сітки патчів у моделей різні (14 vs 16), клік перераховується в кожну окремо.
+    «Центрований cos»: від усіх фіч віднімаємо середній патч галереї до нормування. Спільний для всіх патчів
+    компонент (у DINOv3 медіанний сирий cos ~0.5) зникає, і лишається те, чим патч відрізняється від типового.
     """
     PREVIEW_W = 760
 
@@ -1792,11 +1794,15 @@ class PatchSimilarityPanel:
 
         self.encs, self.queries, self.gallery, self.max_side = encs, queries, gallery, max_side
         self.g_ims = load_images(p for _, p in gallery)
-        self.g_feats = {m: [l2n(e.features(im, max_side)["patches"]) for im in self.g_ims] for m, e in encs.items()}
+        g_raw = {m: [e.features(im, max_side)["patches"] for im in self.g_ims] for m, e in encs.items()}
+        self.mu = {m: np.concatenate([F.reshape(-1, F.shape[-1]) for F in Fs]).mean(0) for m, Fs in g_raw.items()}
+        self.g_feats = {"raw": {m: [l2n(F) for F in Fs] for m, Fs in g_raw.items()},
+                        "centered": {m: [l2n(F - self.mu[m]) for F in Fs] for m, Fs in g_raw.items()}}
         self.xy = start_xy
         self.q_dd = W.Dropdown(options=[(lbl, i) for i, (lbl, _) in enumerate(queries)], description="запит",
                                layout=W.Layout(width="55%"))
         self.rad = W.ToggleButtons(options=[("1 патч", 0), ("окіл 3×3", 1)], value=0)
+        self.mode = W.ToggleButtons(options=[("сирий cos", "raw"), ("центрований cos", "centered")], value="raw")
         self.preview = W.Image(format="jpeg", layout=W.Layout(width=f"{self.PREVIEW_W}px"))
         self.out = W.Output()
         try:
@@ -1809,12 +1815,15 @@ class PatchSimilarityPanel:
             hint = "ipyevents не встановлено: точку задавайте через panel.set_point(x, y) у пікселях кадру."
         self.q_dd.observe(lambda ch: self._load(ch["new"]), names="value")
         self.rad.observe(lambda _: self._render(), names="value")
-        self.ui = W.VBox([W.HBox([self.q_dd, self.rad]), W.HTML(f"<i>{hint}</i>"), self.preview, self.out])
+        self.mode.observe(lambda _: self._render(), names="value")
+        self.ui = W.VBox([W.HBox([self.q_dd, self.rad, self.mode]), W.HTML(f"<i>{hint}</i>"), self.preview, self.out])
         self._load(0, keep_xy=start_xy is not None, render=AUTORUN)
 
     def _load(self, i: int, keep_xy: bool = False, render: bool = True):
         self.q_im = Image.open(self.queries[i][1]).convert("RGB")
-        self.q_feats = {m: l2n(e.features(self.q_im, self.max_side)["patches"]) for m, e in self.encs.items()}
+        q_raw = {m: e.features(self.q_im, self.max_side)["patches"] for m, e in self.encs.items()}
+        self.q_feats = {"raw": {m: l2n(F) for m, F in q_raw.items()},
+                        "centered": {m: l2n(F - self.mu[m]) for m, F in q_raw.items()}}
         if not keep_xy:
             self.xy = (self.q_im.width / 2, self.q_im.height / 2)
         if render:
@@ -1846,17 +1855,20 @@ class PatchSimilarityPanel:
             self.out.clear_output(wait=True)
             fig, axes = plt.subplots(len(self.encs), n_g + 1, figsize=(2.9 * (n_g + 1), 2.0 * len(self.encs) + 0.5),
                                      squeeze=False, layout="constrained")
+            mode = self.mode.value
+            label = "cos" if mode == "raw" else "центр. cos"
             for r, m in enumerate(self.encs):
-                q, (pr, pc) = self._query_vec(self.q_feats[m])
-                s_q, s_g = self.q_feats[m] @ q, [F @ q for F in self.g_feats[m]]
-                # Шкала — сирі cos від медіани до максимуму: окремо для запиту (сам об'єкт дає ~1)
+                Fq, Fg = self.q_feats[mode][m], self.g_feats[mode][m]
+                q, (pr, pc) = self._query_vec(Fq)
+                s_q, s_g = Fq @ q, [F @ q for F in Fg]
+                # Шкала — cos від медіани до максимуму: окремо для запиту (сам об'єкт дає ~1)
                 # і спільна для галереї рядка, щоб кадри галереї порівнювались чесно.
                 s_q_wo = s_q.copy()
                 s_q_wo[pr, pc] = np.nan
                 pool = np.concatenate([s.ravel() for s in s_g])
                 vmin, vmax = np.percentile(pool, 50), pool.max()
                 axes[r, 0].imshow(_overlay(thumb(self.q_im), s_q, np.nanpercentile(s_q_wo, 50), np.nanmax(s_q_wo)))
-                axes[r, 0].set_title(f"{m} · запит · галерея: cos {vmin:.2f}…{vmax:.2f}", fontsize=8)
+                axes[r, 0].set_title(f"{m} · запит · галерея: {label} {vmin:.2f}…{vmax:.2f}", fontsize=8)
                 for j, (im, s) in enumerate(zip(self.g_ims, s_g)):
                     axes[r, j + 1].imshow(_overlay(thumb(im), s, vmin, vmax))
                     axes[r, j + 1].set_title(f"{self.gallery[j][0].split('/')[-1][:18]} · max {s.max():.2f}", fontsize=8)

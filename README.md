@@ -15,7 +15,7 @@
 | 3 | [Оцінка руху та основи SLAM](lessons/03-odometry-slam/) | 1 | [✔](homework/01-features-icp/) |
 | 4 | [3D-реконструкція: NeRF та 3D Gaussian Splatting](lessons/04-nerf-3dgs/) | 1 |  |
 | 5 | [Vision Transformers та мультимодальні моделі](lessons/05-vit-multimodal/) | 2 |  |
-| 6 | Zero-shot сегментація та Open-Vocabulary детекція | 2 | ✔ |
+| 6 | [Zero-shot сегментація та Open-Vocabulary детекція](lessons/06-zero-shot-segmentation/) | 2 | [✔](homework/02-grounded-sam2-video/) |
 | 7 | Генеративні моделі в CV: принципи | 2 | ✔ |
 | 8 | Адаптація, керування та синтез даних | 2 |  |
 | 9 | Multi-Object Tracking та Re-Identification | 3 | ✔ |
@@ -46,7 +46,7 @@ lessons/NN-slug/   одне заняття — одна папка: README з п
 homework/NN-slug/  одне ДЗ — одна папка: ноутбук для студента, README, solution/ для викладача
 artifacts/         ваги моделей, зображення й датасети для демо (у git — лише зображення)
 scripts/           налаштування середовища
-tools/             завантаження датасетів і ваг (KITTI, Middlebury, VisDrone, DINO- і CLIP-моделі) і допоміжні генератори даних
+tools/             завантаження датасетів і ваг (KITTI, Middlebury, VisDrone, DINO, CLIP, SAM і OV-детектори) і допоміжні генератори даних
 environment.yml    conda-середовище: лише Python 3.11 і pip
 requirements.txt   усі пакети курсу, що вживаються в одному середовищі; згруповані за заняттями
 ```
@@ -129,7 +129,9 @@ pip install -r requirements.txt
 У цьому разі збірку torch під свою відеокарту обираєш сам: на Windows `pip` з PyPI
 ставить лише CPU-збірку. Команду для своєї CUDA бери з
 [pytorch.org/get-started](https://pytorch.org/get-started/locally/) і виконуй **до**
-`pip install -r requirements.txt`.
+`pip install -r requirements.txt`. Перед нею задай `SAM2_BUILD_CUDA=0` (Windows:
+`$env:SAM2_BUILD_CUDA = "0"`): інакше SAM 2 для заняття 6 намагається скомпілювати
+необов'язкове CUDA-розширення і без `nvcc` падає. `scripts/setup.*` роблять це самі.
 
 Пакети окремих занять (наприклад, `open3d`, `scipy`, `kiss-icp` для заняття 3) теж у
 кореневому `requirements.txt`, згруповані за заняттями, і ставляться тією самою командою.
@@ -151,13 +153,19 @@ pip install -r requirements.txt
   заняття 2: `python tools/fetch_middlebury.py` (≈45 МБ).
 - [`artifacts/kitti/`](artifacts/kitti/) — KITTI odometry для демо заняття 3:
   `python tools/fetch_kitti.py` (≈3 ГБ з Google Drive курсу — завантажуй заздалегідь).
-- [`artifacts/visdrone/`](artifacts/visdrone/) — VisDrone-VID для демо заняття 5:
-  `python tools/fetch_visdrone.py --splits train val test-dev` (≈11 ГБ).
+- [`artifacts/visdrone/`](artifacts/visdrone/) — VisDrone-VID для демо занять 5 і 6:
+  `python tools/fetch_visdrone.py --splits train val test-dev` (≈11 ГБ; заняттю 6 досить `--splits val`),
+  і VisDrone-DET-val для заняття 6: `python tools/fetch_visdrone.py --dataset visdrone-det` (≈80 МБ).
 - `artifacts/models/dino/`, `artifacts/models/clip/` — DINOv2 / DINOv3 і CLIP, SigLIP 2,
   RemoteCLIP, SkyCLIP для заняття 5: `python tools/fetch_dino_models.py` і
   `python tools/fetch_clip_models.py`. Скрипти пишуть `manifest.json` із SHA-256, і після
   завантаження ноутбуки працюють офлайн. DINOv3 — gated-модель: спершу прийми ліцензію на
   Hugging Face і виконай `hf auth login` (деталі — у [README заняття](lessons/05-vit-multimodal/)).
+- `artifacts/models/sam/`, `artifacts/models/ov/`, `artifacts/models/ultralytics/` — сімейство SAM (SAM, HQ-SAM,
+  SAM 2.1, MobileSAM, FastSAM, gated SAM 3) і open-vocabulary детектори (Grounding DINO, OWLv2, Florence-2, YOLOE,
+  YOLO-World, YOLO11, опційно Qwen2.5-VL) для заняття 6: `python tools/fetch_sam_models.py` і
+  `python tools/fetch_ov_models.py`. Так само з маніфестами й офлайн-режимом
+  (деталі — у [README заняття](lessons/06-zero-shot-segmentation/)).
 
 Невеликі датасети для домашніх завдань (наприклад, Redwood і Fountain у ДЗ 3) Open3D
 завантажує сам під час першого запуску в `~/open3d_data`, а не в `artifacts/`.
@@ -166,7 +174,7 @@ pip install -r requirements.txt
 
 Заняття 3, 6, 7, 9, 11, 13, 16, 18. Завдання лежать у [`homework/`](homework/), по теці на ДЗ;
 у README кожної — кроки, бали й що здати. Виконаний ноутбук (з виводами) і файли, які просить
-завдання, студенти прикріплюють в особистому кабінеті LMS; комітити в репозиторій не потрібно.
+завдання, студенти пакують в один архів і прикріплюють його в особистому кабінеті LMS; комітити в репозиторій не потрібно.
 Дедлайн — початок наступного заняття.
 
 Якщо README завдання не каже інакше, оцінка така: коректність 40, метрики та чесність
