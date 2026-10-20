@@ -34,3 +34,4 @@ backup
 *.DS_Store
 lessons/04-nerf-3dgs/01-colmap-visualize/data/*
 lessons/04-nerf-3dgs/02-nerf-visualize/viewer/scenes/*
+lessons/02-calibration-stereo/calibration_images/
