@@ -8,6 +8,7 @@ anaconda_projects/
 data/
 build/
 outputs/
+!homework/01-features-icp/outputs/**
 *.pt
 *.pth
 *.onnx
